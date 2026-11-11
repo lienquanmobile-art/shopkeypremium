@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const sess = getSession();
   if (sess) {
-    // xác thực lại session
     const snap = await db.ref(`users/${sess.username}`).once('value');
     if (snap.exists()) {
       enterApp({ username: sess.username, ...snap.val() });
@@ -80,14 +79,11 @@ function enterApp(user) {
   document.getElementById('roleBadge').textContent = user.role;
   document.getElementById('userBox').style.display = 'flex';
 
-  // Hiện số dư nếu là USER/ADMIN/OWNER
   updateBalanceDisplay(user.balance || 0);
   document.getElementById('balanceBox').style.display = 'inline-block';
 
-  // Nếu là OWNER/ADMIN -> hiện tab quản lí
   if (user.role === 'OWNER' || user.role === 'ADMIN') {
     document.getElementById('adminNavBtn').classList.remove('hidden');
-    // Chỉ OWNER thấy tab Log
     if (user.role !== 'OWNER') {
       document.querySelectorAll('.owner-only').forEach(el => el.classList.add('hidden'));
     } else {
@@ -98,7 +94,6 @@ function enterApp(user) {
     document.getElementById('adminNavBtn').classList.add('hidden');
   }
 
-  // Lắng nghe realtime số dư
   db.ref(`users/${user.username}/balance`).on('value', snap => {
     updateBalanceDisplay(snap.val() || 0);
   });
@@ -118,7 +113,6 @@ function bindLogout() {
 
 // ==== HOME UI ====
 function bindHomeUI() {
-  // Tab mua key / nạp tiền
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
@@ -129,7 +123,6 @@ function bindHomeUI() {
     });
   });
 
-  // Nav chính
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -140,7 +133,6 @@ function bindHomeUI() {
     });
   });
 
-  // Chọn gói
   document.querySelectorAll('.package-card').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
@@ -153,11 +145,10 @@ function bindHomeUI() {
     });
   });
 
-  // Mua ngay
   document.getElementById('buyNowBtn').addEventListener('click', handleBuy);
 }
 
-// ==== MUA KEY ====
+// ==== MUA KEY (CẬP NHẬT LOGIC MIỄN PHÍ CHO ADMIN/OWNER) ====
 async function handleBuy() {
   const msg = document.getElementById('buyMsg');
   if (!CURRENT_USER) return flash(msg, 'Bạn cần đăng nhập');
@@ -167,9 +158,13 @@ async function handleBuy() {
   const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
   const userData = userSnap.val();
   const balance = userData.balance || 0;
+  
+  // NẾU LÀ ADMIN HOẶC OWNER -> KHÔNG MẤT PHÍ
+  const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+  const cost = isFree ? 0 : pkg.price;
 
-  if (balance < pkg.price) {
-    return flash(msg, `Số dư không đủ (cần ${formatMoney(pkg.price)}đ, hiện có ${formatMoney(balance)}đ)`);
+  if (balance < cost) {
+    return flash(msg, `Số dư không đủ (cần ${formatMoney(cost)}đ, hiện có ${formatMoney(balance)}đ)`);
   }
 
   // Lấy 1 key bất kì trong gói tương ứng
@@ -183,18 +178,35 @@ async function handleBuy() {
   const chosenId = keyIds[Math.floor(Math.random() * keyIds.length)];
   const chosenKey = keysObj[chosenId];
 
-  // Trừ tiền, xóa key, ghi log
   const updates = {};
-  updates[`users/${CURRENT_USER.username}/balance`] = balance - pkg.price;
+  // Chỉ trừ tiền nếu KHÔNG PHẢI là ADMIN/OWNER
+  if (!isFree) {
+    updates[`users/${CURRENT_USER.username}/balance`] = balance - cost;
+  }
+  
+  // Xóa key khỏi database
   updates[`keys/${SELECTED_PACKAGE}/${chosenId}`] = null;
+  
+  // Lưu lịch sử mua
   updates[`purchases/${CURRENT_USER.username}/${Date.now()}`] = {
     package: SELECTED_PACKAGE,
     packageName: pkg.name,
-    price: pkg.price,
-    key: chosenKey
+    price: cost,
+    key: chosenKey,
+    note: isFree ? 'Miễn phí (Admin/Owner)' : 'Mua thường'
   };
+  
   await db.ref().update(updates);
 
-  await writeLog(CURRENT_USER.username, 'BUY_KEY', `Mua ${pkg.name} - key: ${chosenKey}`);
-  flash(msg, `Mua thành công! Key của bạn: ${chosenKey}`, '#00e5ff');
+  const logMsg = isFree 
+    ? `Nhận key FREE (${pkg.name}) - key: ${chosenKey}` 
+    : `Mua ${pkg.name} - key: ${chosenKey}`;
+    
+  await writeLog(CURRENT_USER.username, 'BUY_KEY', logMsg);
+  
+  const successMsg = isFree 
+    ? `Nhận thành công (Miễn phí)! Key của bạn: ${chosenKey}`
+    : `Mua thành công! Key của bạn: ${chosenKey}`;
+    
+  flash(msg, successMsg, '#00e5ff');
 }
