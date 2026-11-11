@@ -1,0 +1,95 @@
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.admin-tab {
+  padding: 8px 14px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a44;
+  color: #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.admin-tab.active { background: #00e5ff22; border-color: #00e5ff; color: #00e5ff; }
+
+.admin-content {
+  background: rgba(20, 20, 40, 0.9);
+  border: 1px solid #2a2a44;
+  border-radius: 14px;
+  padding: 22px;
+}
+.admin-content h3 { margin-bottom: 16px; color: #00e5ff; }
+.admin-content label {
+  display: block;
+  font-size: 13px;
+  margin: 12px 0 6px;
+  color: #aaa;
+}
+.admin-content input,
+.admin-content select {
+  width: 100%;
+  padding: 11px;
+  background: #0f0f1a;
+  border: 1px solid #2a2a44;
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+}
+.admin-content input:focus,
+.admin-content select:focus { border-color: #00e5ff; }
+
+.result-box {
+  margin-top: 16px;
+  padding: 16px;
+  background: #0f0f1a;
+  border: 1px solid #00e5ff66;
+  border-radius: 10px;
+}
+.result-box p { margin-bottom: 6px; font-size: 14px; }
+.result-box code {
+  color: #00e5ff;
+  background: #00e5ff11;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.denom-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+.denom {
+  padding: 10px;
+  background: #1a1a2e;
+  border: 1px solid #2a2a44;
+  color: #00e5ff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.denom:hover { border-color: #00e5ff; background: #00e5ff11; }
+
+.key-list, .log-list {
+  list-style: none;
+  margin-top: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.key-list li, .log-list li {
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border: 1px solid #2a2a44;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.key-list code { color: #00e5ff; }
+.log-list li { font-size: 12px; color: #bbb; }
