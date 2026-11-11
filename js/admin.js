@@ -1,5 +1,4 @@
 // admin.js
-
 let ADMIN_BOUND = false;
 
 window.initAdminPage = function (user) {
@@ -20,7 +19,6 @@ window.initAdminPage = function (user) {
   loadBalanceUserOptions();
 };
 
-// ==== TABS ====
 function bindAdminTabs() {
   document.querySelectorAll('.admin-tab').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -36,11 +34,10 @@ function bindAdminTabs() {
   });
 }
 
-// ==== TẠO TÀI KHOẢN ====
 function bindCreateAccount() {
   document.getElementById('createAccountBtn').addEventListener('click', async () => {
     const msg = document.getElementById('createMsg');
-    const type = document.getElementById('createType').value; // USER | ADMIN
+    const type = document.getElementById('createType').value; 
     const username = document.getElementById('createUsername').value.trim();
     const password = document.getElementById('createPassword').value;
 
@@ -63,7 +60,6 @@ function bindCreateAccount() {
 
     await writeLog(CURRENT_USER.username, 'CREATE_ACCOUNT', `Tạo tài khoản ${type}: ${username}`);
 
-    // Hiển thị kết quả
     document.getElementById('resType').textContent = type;
     document.getElementById('resUsername').textContent = username;
     document.getElementById('resPassword').textContent = password;
@@ -81,9 +77,9 @@ function bindCreateAccount() {
   });
 }
 
-// ==== THÊM SỐ DƯ ====
 async function loadBalanceUserOptions() {
   const sel = document.getElementById('balanceUserSelect');
+  if (!sel) return;
   const snap = await db.ref('users').once('value');
   const users = snap.val() || {};
   sel.innerHTML = '';
@@ -126,7 +122,6 @@ function bindDenomButtons() {
   });
 }
 
-// ==== KEY TABS ====
 function bindKeyTabs() {
   const map = {
     '1d':  { input: 'keyInput1d',  addBtn: 'addKey1d',  list: 'keyList1d'  },
@@ -140,7 +135,6 @@ function bindKeyTabs() {
     const addBtn = document.getElementById(cfg.addBtn);
     if (!addBtn) continue;
 
-    // tránh bind 2 lần
     if (addBtn.dataset.bound === '1') {
       renderKeyList(pack, cfg.list);
       continue;
@@ -164,6 +158,7 @@ async function renderKeyList(pack, listId) {
   const snap = await db.ref(`keys/${pack}`).once('value');
   const obj = snap.val() || {};
   const ul = document.getElementById(listId);
+  if (!ul) return;
   ul.innerHTML = '';
   const entries = Object.entries(obj);
   if (entries.length === 0) {
@@ -186,7 +181,6 @@ async function renderKeyList(pack, listId) {
   });
 }
 
-// ==== LOG (chỉ OWNER) ====
 async function loadLogs() {
   const ul = document.getElementById('logList');
   if (!ul) return;
