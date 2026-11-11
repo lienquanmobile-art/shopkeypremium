@@ -68,6 +68,8 @@
       <div class="home-tabs">
         <button class="home-tab active" data-home="buykey">Mua Key</button>
         <button class="home-tab" data-home="deposit">Nạp tiền</button>
+        <!-- TAB LỊCH SỬ MỚI -->
+        <button class="home-tab" data-home="history">Lịch sử mua hàng</button>
       </div>
 
       <!-- Mua key -->
@@ -104,6 +106,16 @@
       <div id="home-deposit" class="home-content hidden">
         <div class="deposit-dev">
           <h3>🚧 Tính năng đang được phát triển 🚧</h3>
+        </div>
+      </div>
+
+      <!-- LỊCH SỬ MUA HÀNG -->
+      <div id="home-history" class="home-content hidden">
+        <div class="history-box">
+          <h3>Lịch sử mua hàng</h3>
+          <ul id="historyList" class="history-list">
+            <!-- Dữ liệu sẽ được load bằng JS -->
+          </ul>
         </div>
       </div>
     </section>
@@ -203,6 +215,19 @@
       </div>
     </section>
   </main>
+
+  <!-- MODAL THANH TOÁN THÀNH CÔNG -->
+  <div id="successModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="modal-title">Thanh toán thành công!</h3>
+      <p class="modal-desc">Key của bạn là:</p>
+      <div class="modal-key-box">
+        <code id="modalKeyValue">KEY_XXXXXXXX</code>
+      </div>
+      <button id="modalCopyBtn" class="btn-primary">Sao chép</button>
+      <button id="modalCloseBtn" class="btn-secondary" style="width:100%">Đóng</button>
+    </div>
+  </div>
 
   <!-- CHỈ CÓ DUY NHẤT 1 LẦN CÁC THẺ SCRIPT NÀY -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
