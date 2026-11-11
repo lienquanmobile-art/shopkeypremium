@@ -9,23 +9,6 @@
 </head>
 <body>
 
-  <!-- ========== HEADER ========== -->
-  <header id="header" class="header hidden">
-    <div class="header-left">
-      <h1 class="logo">BLACK SEVER <span>KEY PREMIUM</span></h1>
-    </div>
-    <div class="header-right">
-      <div class="balance-box" id="balanceBox" style="display:none;">
-        💰 <span id="balanceValue">0</span> VND
-      </div>
-      <div class="user-box" id="userBox" style="display:none;">
-        <span id="userNameLabel"></span>
-        <span class="role-badge" id="roleBadge"></span>
-        <button id="logoutBtn" class="btn-logout">Đăng xuất</button>
-      </div>
-    </div>
-  </header>
-
   <!-- ========== LOGIN SCREEN ========== -->
   <section id="loginScreen" class="login-screen">
     <div class="login-card">
@@ -55,6 +38,23 @@
       <p id="loginMsg" class="msg"></p>
     </div>
   </section>
+
+  <!-- ========== HEADER ========== -->
+  <header id="header" class="header hidden">
+    <div class="header-left">
+      <h1 class="logo">BLACK SEVER <span>KEY PREMIUM</span></h1>
+    </div>
+    <div class="header-right">
+      <div class="balance-box" id="balanceBox" style="display:none;">
+        💰 <span id="balanceValue">0</span> VND
+      </div>
+      <div class="user-box" id="userBox" style="display:none;">
+        <span id="userNameLabel"></span>
+        <span class="role-badge" id="roleBadge"></span>
+        <button id="logoutBtn" class="btn-logout">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
 
   <!-- ========== MAIN APP ========== -->
   <main id="mainApp" class="main-app hidden">
@@ -206,228 +206,8 @@
     </section>
   </main>
 
-  <!-- Firebase SDK (compat để đơn giản) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <script src="js/firebase-config.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/admin.js"></script>
-</body>
-</html><!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Black Sever Key Premium</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/admin.css" />
-</head>
-<body>
-
-  <!-- ========== HEADER ========== -->
-  <header id="header" class="header hidden">
-    <div class="header-left">
-      <h1 class="logo">BLACK SEVER <span>KEY PREMIUM</span></h1>
-    </div>
-    <div class="header-right">
-      <div class="balance-box" id="balanceBox" style="display:none;">
-        💰 <span id="balanceValue">0</span> VND
-      </div>
-      <div class="user-box" id="userBox" style="display:none;">
-        <span id="userNameLabel"></span>
-        <span class="role-badge" id="roleBadge"></span>
-        <button id="logoutBtn" class="btn-logout">Đăng xuất</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ========== LOGIN SCREEN ========== -->
-  <section id="loginScreen" class="login-screen">
-    <div class="login-card">
-      <h2>BLACK SEVER KEY PREMIUM</h2>
-
-      <div class="login-tabs">
-        <button class="tab-btn active" data-tab="normal">Đăng nhập</button>
-        <button class="tab-btn" data-tab="key">Đăng nhập bằng Key</button>
-      </div>
-
-      <!-- Login thường -->
-      <div id="normalLogin" class="login-form">
-        <label>Tên đăng nhập</label>
-        <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" />
-        <label>Mật khẩu</label>
-        <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" />
-        <button id="loginBtn" class="btn-primary">Đăng nhập</button>
-      </div>
-
-      <!-- Login bằng key -->
-      <div id="keyLogin" class="login-form hidden">
-        <label>Private Key</label>
-        <input type="text" id="loginKey" placeholder="BLACKUSER_XXXXXXXX" />
-        <button id="keyLoginBtn" class="btn-primary">Đăng nhập bằng Key</button>
-      </div>
-
-      <p id="loginMsg" class="msg"></p>
-    </div>
-  </section>
-
-  <!-- ========== MAIN APP ========== -->
-  <main id="mainApp" class="main-app hidden">
-
-    <!-- NAV TABS -->
-    <nav class="main-nav">
-      <button class="nav-btn active" data-page="home">Trang chủ</button>
-      <button class="nav-btn hidden" id="adminNavBtn" data-page="admin">Quản lí</button>
-    </nav>
-
-    <!-- ===== PAGE: HOME ===== -->
-    <section id="page-home" class="page">
-      <div class="home-tabs">
-        <button class="home-tab active" data-home="buykey">Mua Key</button>
-        <button class="home-tab" data-home="deposit">Nạp tiền</button>
-      </div>
-
-      <!-- Mua key -->
-      <div id="home-buykey" class="home-content">
-        <div class="package-grid">
-          <div class="package-card" data-package="1d">
-            <span class="sale-badge">SALE</span>
-            <h3>Gói 1 ngày</h3>
-            <p class="price">2.500đ</p>
-          </div>
-          <div class="package-card" data-package="3d">
-            <h3>Gói 3 ngày</h3>
-            <p class="price">40.000đ</p>
-          </div>
-          <div class="package-card" data-package="7d">
-            <h3>Gói 7 ngày</h3>
-            <p class="price">75.000đ</p>
-          </div>
-          <div class="package-card" data-package="30d">
-            <h3>Gói 30 ngày</h3>
-            <p class="price">250.000đ</p>
-          </div>
-        </div>
-
-        <div class="buy-box">
-          <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
-          <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
-          <button id="buyNowBtn" class="btn-primary" disabled>Mua ngay</button>
-          <p id="buyMsg" class="msg"></p>
-        </div>
-      </div>
-
-      <!-- Nạp tiền -->
-      <div id="home-deposit" class="home-content hidden">
-        <div class="deposit-dev">
-          <h3>🚧 Tính năng đang được phát triển 🚧</h3>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== PAGE: ADMIN ===== -->
-    <section id="page-admin" class="page hidden">
-      <div class="admin-tabs">
-        <button class="admin-tab active" data-admin="create">Tạo tài khoản</button>
-        <button class="admin-tab" data-admin="balance">Thêm số dư</button>
-        <button class="admin-tab" data-admin="key1d">Key 1 ngày</button>
-        <button class="admin-tab" data-admin="key3d">Key 3 ngày</button>
-        <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
-        <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
-        <button class="admin-tab owner-only" data-admin="log">Log</button>
-      </div>
-
-      <!-- Tạo tài khoản -->
-      <div id="admin-create" class="admin-content">
-        <h3>Tạo tài khoản</h3>
-        <label>Loại tài khoản</label>
-        <select id="createType">
-          <option value="USER">User</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-        <label>Tên đăng nhập</label>
-        <input type="text" id="createUsername" />
-        <label>Mật khẩu</label>
-        <input type="password" id="createPassword" />
-        <button id="createAccountBtn" class="btn-primary">Tạo</button>
-
-        <div id="createResult" class="result-box hidden">
-          <p>Loại tài khoản: <strong id="resType"></strong></p>
-          <p>Tên đăng nhập: <strong id="resUsername"></strong></p>
-          <p>Mật khẩu: <strong id="resPassword"></strong></p>
-          <p>Private key: <code id="resKey"></code></p>
-          <button id="copyKeyBtn" class="btn-secondary">Sao chép</button>
-        </div>
-        <p id="createMsg" class="msg"></p>
-      </div>
-
-      <!-- Thêm số dư -->
-      <div id="admin-balance" class="admin-content hidden">
-        <h3>Thêm số dư</h3>
-        <label>Tài khoản (User)</label>
-        <select id="balanceUserSelect"></select>
-        <label>Số tiền</label>
-        <input type="number" id="balanceAmount" placeholder="Nhập số tiền" />
-        <div class="denom-grid">
-          <button class="denom" data-amount="5000">5.000VND</button>
-          <button class="denom" data-amount="10000">10.000VND</button>
-          <button class="denom" data-amount="20000">20.000VND</button>
-          <button class="denom" data-amount="50000">50.000VND</button>
-          <button class="denom" data-amount="100000">100.000VND</button>
-          <button class="denom" data-amount="200000">200.000VND</button>
-          <button class="denom" data-amount="500000">500.000VND</button>
-        </div>
-        <button id="addBalanceBtn" class="btn-primary">Thêm</button>
-        <p id="balanceMsg" class="msg"></p>
-      </div>
-
-      <!-- Key 1 ngày -->
-      <div id="admin-key1d" class="admin-content hidden">
-        <h3>Key 1 ngày</h3>
-        <input type="text" id="keyInput1d" placeholder="Thêm key của bạn (nội dung gì cũng được)" />
-        <button id="addKey1d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList1d" class="key-list"></ul>
-      </div>
-
-      <!-- Key 3 ngày -->
-      <div id="admin-key3d" class="admin-content hidden">
-        <h3>Key 3 ngày</h3>
-        <input type="text" id="keyInput3d" placeholder="Thêm key của bạn" />
-        <button id="addKey3d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList3d" class="key-list"></ul>
-      </div>
-
-      <!-- Key 7 ngày -->
-      <div id="admin-key7d" class="admin-content hidden">
-        <h3>Key 7 ngày</h3>
-        <input type="text" id="keyInput7d" placeholder="Thêm key của bạn" />
-        <button id="addKey7d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList7d" class="key-list"></ul>
-      </div>
-
-      <!-- Key 30 ngày -->
-      <div id="admin-key30d" class="admin-content hidden">
-        <h3>Key 30 ngày</h3>
-        <input type="text" id="keyInput30d" placeholder="Thêm key của bạn" />
-        <button id="addKey30d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList30d" class="key-list"></ul>
-      </div>
-
-      <!-- Log -->
-      <div id="admin-log" class="admin-content hidden owner-only">
-        <h3>Log hệ thống</h3>
-        <ul id="logList" class="log-list"></ul>
-      </div>
-    </section>
-  </main>
-
-  <!-- Firebase SDK (compat để đơn giản) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
   <script src="js/firebase-config.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/auth.js"></script>
