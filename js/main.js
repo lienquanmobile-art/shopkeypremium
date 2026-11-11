@@ -71,7 +71,6 @@ function enterApp(user) {
   CURRENT_USER = user;
   saveSession({ username: user.username });
 
-  // Ẩn form đăng nhập bằng cả Class và Style phòng hờ CSS lỗi
   const loginScreen = document.getElementById('loginScreen');
   if(loginScreen) {
     loginScreen.classList.add('hidden');
@@ -118,16 +117,22 @@ function bindLogout() {
 }
 
 function bindHomeUI() {
+  // Chuyển tab Mua key / Nạp tiền / Lịch sử
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.home;
+      
       document.getElementById('home-buykey').classList.toggle('hidden', target !== 'buykey');
       document.getElementById('home-deposit').classList.toggle('hidden', target !== 'deposit');
+      document.getElementById('home-history').classList.toggle('hidden', target !== 'history');
+      
+      if (target === 'history') loadHistory();
     });
   });
 
+  // Chuyển trang Trang chủ / Quản lí
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -138,6 +143,7 @@ function bindHomeUI() {
     });
   });
 
+  // Chọn gói
   document.querySelectorAll('.package-card').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
@@ -151,6 +157,25 @@ function bindHomeUI() {
   });
 
   document.getElementById('buyNowBtn').addEventListener('click', handleBuy);
+
+  // Sự kiện cho Modal
+  document.getElementById('modalCloseBtn').addEventListener('click', () => {
+    document.getElementById('successModal').classList.add('hidden');
+  });
+  
+  document.getElementById('modalCopyBtn').addEventListener('click', () => {
+    const key = document.getElementById('modalKeyValue').textContent;
+    navigator.clipboard.writeText(key);
+    const btn = document.getElementById('modalCopyBtn');
+    btn.textContent = 'Đã chép!';
+    btn.style.background = '#00e5ff';
+    btn.style.color = '#000';
+    setTimeout(() => { 
+      btn.textContent = 'Sao chép'; 
+      btn.style.background = ''; 
+      btn.style.color = '';
+    }, 2000);
+  });
 }
 
 async function handleBuy() {
@@ -203,8 +228,44 @@ async function handleBuy() {
     : `Mua ${pkg.name} - key: ${chosenKey}`;
   await writeLog(CURRENT_USER.username, 'BUY_KEY', logMsg);
   
-  const successMsg = isFree 
-    ? `Nhận thành công (Miễn phí)! Key của bạn: ${chosenKey}`
-    : `Mua thành công! Key của bạn: ${chosenKey}`;
-  flash(msg, successMsg, '#00e5ff');
+  msg.textContent = ''; 
+
+  // Hiển thị Modal thay vì thông báo chữ nhỏ
+  document.getElementById('modalKeyValue').textContent = chosenKey;
+  document.getElementById('successModal').classList.remove('hidden');
+}
+
+// HÀM LOAD LỊCH SỬ MUA HÀNG
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '<li class="empty-history">Đang tải dữ liệu...</li>';
+  
+  if (!CURRENT_USER) return;
+
+  const snap = await db.ref(`purchases/${CURRENT_USER.username}`).once('value');
+  const data = snap.val() || {};
+  
+  const arr = Object.entries(data).reverse(); // Đảo ngược để cái mới nhất lên đầu
+  
+  if (arr.length === 0) {
+    list.innerHTML = '<li class="empty-history">Bạn chưa mua key nào.</li>';
+    return;
+  }
+
+  list.innerHTML = '';
+  arr.forEach(([timestamp, item]) => {
+    const date = new Date(Number(timestamp)).toLocaleString('vi-VN');
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="history-info">
+        <strong>${item.packageName}</strong>
+        <p>Thời gian: ${date}</p>
+        <p>Thanh toán: ${item.price === 0 ? 'Miễn phí' : formatMoney(item.price) + 'đ'}</p>
+      </div>
+      <div class="history-key">
+        <code>${item.key}</code>
+      </div>
+    `;
+    list.appendChild(li);
+  });
 }
