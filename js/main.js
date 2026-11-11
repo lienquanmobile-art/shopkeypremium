@@ -187,3 +187,14 @@ async function handleBuy() {
   const updates = {};
   updates[`users/${CURRENT_USER.username}/balance`] = balance - pkg.price;
   updates[`keys/${SELECTED_PACKAGE}/${chosenId}`] = null;
+  updates[`purchases/${CURRENT_USER.username}/${Date.now()}`] = {
+    package: SELECTED_PACKAGE,
+    packageName: pkg.name,
+    price: pkg.price,
+    key: chosenKey
+  };
+  await db.ref().update(updates);
+
+  await writeLog(CURRENT_USER.username, 'BUY_KEY', `Mua ${pkg.name} - key: ${chosenKey}`);
+  flash(msg, `Mua thành công! Key của bạn: ${chosenKey}`, '#00e5ff');
+}
