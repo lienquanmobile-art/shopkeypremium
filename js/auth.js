@@ -1,8 +1,6 @@
 // auth.js
-
 const SESSION_KEY = 'bskp_session';
 
-// Lưu session vào localStorage
 function saveSession(user) {
   localStorage.setItem(SESSION_KEY, JSON.stringify(user));
 }
@@ -14,7 +12,6 @@ function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-// Đảm bảo tài khoản Owner tồn tại
 async function ensureOwnerAccount() {
   const ownerRef = db.ref('users/black');
   const snap = await ownerRef.once('value');
@@ -31,7 +28,6 @@ async function ensureOwnerAccount() {
   }
 }
 
-// Đăng nhập thường
 async function loginNormal(username, password) {
   const snap = await db.ref(`users/${username}`).once('value');
   if (!snap.exists()) throw new Error('Tài khoản không tồn tại');
@@ -40,7 +36,6 @@ async function loginNormal(username, password) {
   return { username, role: user.role, balance: user.balance || 0, privateKey: user.privateKey };
 }
 
-// Đăng nhập bằng private key
 async function loginByKey(key) {
   if (!key || !key.startsWith('BLACK')) throw new Error('Private key không hợp lệ');
 
