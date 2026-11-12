@@ -6,7 +6,6 @@ let matchId = null;
 let isPlayer1 = false;
 let gameUnlocked = false;
 let matchListener = null;
-let isSearching = false;
 
 const TILE_SIZE = 20;
 const COLS = 30;
@@ -87,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Bạn có chắc muốn thoát trận?')) {
       isGameRunning = false;
       isLocalGame = false;
-      isSearching = false;
       clearInterval(gameInterval);
       if (matchId) {
         await db.ref(`matches/${matchId}`).remove();
@@ -151,27 +149,28 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
+  // --- GHÉP TRẬN PVP (BẢN FIX KẸT 100%) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
-    if (isSearching) return; 
-    isSearching = true;
-
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
     
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
+    // Dọn dẹp listener cũ để tránh nhận trận rác
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
 
+    // Làm sạch hàng đợi của mình trước khi tìm
     await myRef.remove();
 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const now = Date.now();
     
+    // Tìm đối thủ (Khác tên và vừa mới bấm < 10s)
     let opponent = null;
     for (const key in queue) {
       if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
@@ -181,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (opponent) {
+      // CÓ ĐỐI THỦ -> TẠO TRẬN (Mình là P2)
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
@@ -200,16 +200,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       await myRef.remove();
-      isSearching = false;
       joinMatch(newMatchId, false); 
     } else {
+      // KHÔNG CÓ AI -> TỰ VÀO HÀNG ĐỢI VÀ CHỜ
       await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
           statusTxt.textContent = 'Không có trận đấu nào!';
-          isSearching = false;
           if (matchListener) db.ref('matches').off('child_added', matchListener);
         }
       }, 15000);
@@ -219,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (m && m.p1_name && m.p2_name && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
-          isSearching = false;
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
         }
       });
@@ -276,20 +274,14 @@ function joinMatch(id, asPlayer1) {
     const data = snap.val();
     if (!data) return;
 
-    // XỬ LÝ KẾT QUẢ: AI ĐÂM VÀO AI THÌ NGƯỜI ĐÓ THUA
     if (data.status === 'ended') {
       let finalWin = false;
       
-      // Nếu P1 chết (do đâm tường, tự cắn, hoặc đâm P2) -> P2 thắng
       if (data.p1_dead && !data.p2_dead) {
         finalWin = !isPlayer1; 
-      } 
-      // Nếu P2 chết (do đâm tường, tự cắn, hoặc đâm P1) -> P1 thắng
-      else if (!data.p1_dead && data.p2_dead) {
+      } else if (!data.p1_dead && data.p2_dead) {
         finalWin = isPlayer1;
-      } 
-      // Nếu cả 2 cùng chết (đâm trực diện vào nhau) hoặc hết giờ
-      else {
+      } else {
         finalWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
       }
       
@@ -348,21 +340,19 @@ function startServerLoop() {
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
-    // CHECK VA CHẠM P1
     if (state.p1_started) {
-      if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true; // Đâm tường
-      if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true; // Tự cắn mình
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; } // Đâm trực diện
-      if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true; // Đâm vào thân địch
+      if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
+      if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
       if (p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
     }
 
-    // CHECK VA CHẠM P2
     if (state.p2_started) {
-      if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true; // Đâm tường
-      if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true; // Tự cắn mình
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; } // Đâm trực diện
-      if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true; // Đâm vào thân địch
+      if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
+      if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
       if (p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
     }
 
