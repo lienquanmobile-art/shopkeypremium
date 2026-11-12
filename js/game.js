@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- GHÉP TRẬN PVP (CƠ CHẾ MỚI CHỐNG TRÙNG LẶP) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -162,15 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
-    // Lấy danh sách hàng đợi
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
-    
-    // Tìm người chơi khác (BẮT BUỘC KHÁC TÊN MÌNH)
     const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
-      // CÓ NGƯỜI CHỜ -> TẠO TRẬN (Mình là P2)
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
@@ -189,10 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
         lastTick: Date.now()
       });
       
-      await myRef.remove(); // Xóa mình khỏi hàng đợi
+      await myRef.remove();
       joinMatch(newMatchId, false); 
     } else {
-      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI VÀ CHỜ
       await myRef.set({ timestamp: Date.now() });
       
       const timeout = setTimeout(async () => {
@@ -202,10 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 15000);
 
-      // Lắng nghe trận mới được tạo
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
-        // Chỉ nhận trận nếu tên mình có trong đó
         if (m && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
@@ -260,21 +252,25 @@ function joinMatch(id, asPlayer1) {
   const matchRef = db.ref(`matches/${matchId}`);
   matchRef.on('value', snap => {
     const data = snap.val();
-    if (!data || data.status === 'ended') return;
+    if (!data) return;
 
+    // Cập nhật HUD
     document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
     document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
     document.getElementById('gameTimer').textContent = data.timeLeft;
     
     drawCanvas(data);
 
-    if (isPlayer1 && (data.p1_started || data.p2_started) && !gameInterval) {
-      startServerLoop();
-    }
-
+    // Nếu trận đấu kết thúc -> Hiện thông báo
     if (data.status === 'ended') {
       const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
       endGame(iWin, data);
+      return;
+    }
+
+    // Bắt đầu chạy Server Ảo nếu có người ấn nút
+    if (isPlayer1 && (data.p1_started || data.p2_started) && !gameInterval) {
+      startServerLoop();
     }
   });
 }
