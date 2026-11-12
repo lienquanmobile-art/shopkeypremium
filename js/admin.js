@@ -5,22 +5,20 @@ let listeners = {};
 window.initAdminPage = function (user) {
   if (ADMIN_BOUND) return;
   ADMIN_BOUND = true;
-
   bindAdminTabs();
   bindCreateAccount();
   bindBalanceTab();
   bindKeyTabs();
   bindDenomButtons();
+  bindBanLogic();
 };
 
 window.refreshAdminData = function() {
   loadBalanceUserOptions();
   loadLogs();
-  
+  loadUserTable();
   const packs = ['1d', '3d', '7d', '30d'];
-  packs.forEach(pack => {
-    renderKeyList(pack, `keyList${pack}`);
-  });
+  packs.forEach(pack => renderKeyList(pack, `keyList${pack}`));
 };
 
 function bindAdminTabs() {
@@ -29,16 +27,173 @@ function bindAdminTabs() {
       document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.admin;
-      
       document.querySelectorAll('.admin-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`admin-${target}`).classList.remove('hidden');
 
       if (target === 'log') loadLogs();
       if (target === 'balance') loadBalanceUserOptions();
+      if (target === 'list') loadUserTable();
     });
   });
 }
 
+// ================== DANH SÁCH TÀI KHOẢN & BAN ==================
+function loadUserTable() {
+  const tbody = document.getElementById('userTableBody');
+  if (!tbody) return;
+  if (listeners['usersList']) listeners['usersList'].off();
+  listeners['usersList'] = db.ref('users');
+
+  listeners['usersList'].on('value', snap => {
+    const users = snap.val() || {};
+    tbody.innerHTML = '';
+    
+    for (const uname in users) {
+      const u = users[uname];
+      if (u.role === 'OWNER') continue; // Không hiện Owner
+      
+      const isBanned = u.banUntil && u.banUntil > Date.now();
+      const statusHtml = isBanned 
+        ? `<span class="status-badge status-banned">Bị khóa</span>` 
+        : `<span class="status-badge status-active">Bình thường</span>`;
+      
+      const actionBtn = isBanned
+        ? `<button class="btn-secondary btn-sm btn-unban" data-uname="${uname}">Bỏ cấm</button>`
+        : `<button class="btn-secondary btn-sm btn-ban" data-uname="${uname}" style="color: #ff3b5c; border-color: #ff3b5c;">Cấm</button>`;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${uname}</strong> <br><small style="color:#888">${u.role}</small></td>
+        <td style="color: #00e5ff; font-weight: bold;">${formatMoney(u.balance || 0)}đ</td>
+        <td>${statusHtml}</td>
+        <td>${actionBtn}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    bindTableButtons();
+  });
+}
+
+function bindTableButtons() {
+  document.querySelectorAll('.btn-ban').forEach(btn => {
+    btn.onclick = () => openBanModal(btn.dataset.uname);
+  });
+  document.querySelectorAll('.btn-unban').forEach(btn => {
+    btn.onclick = async () => {
+      const uname = btn.dataset.uname;
+      await db.ref(`users/${uname}`).update({ banUntil: null, banReason: null });
+      await writeLog(CURRENT_USER.username, 'UNBAN', `Mở khóa tài khoản ${uname}`);
+      loadUserTable();
+    };
+  });
+}
+
+function bindBanLogic() {
+  const modal = document.getElementById('banModal');
+  const btnCancel = document.getElementById('cancelBanBtn');
+  const btnConfirm = document.getElementById('confirmBanBtn');
+  const selectReason = document.getElementById('banReasonSelect');
+  const inputReason = document.getElementById('banReasonInput');
+  const timeInputs = ['banYears', 'banDays', 'banHours', 'banMinutes', 'banSeconds'];
+
+  btnCancel.onclick = () => modal.classList.add('hidden');
+
+  // Bấm nút thời gian có sẵn
+  document.querySelectorAll('.ban-preset').forEach(btn => {
+    btn.onclick = () => {
+      timeInputs.forEach(id => document.getElementById(id).value = '');
+      const time = btn.dataset.time;
+      if (time === '1d') document.getElementById('banDays').value = 1;
+      if (time === '3d') document.getElementById('banDays').value = 3;
+      if (time === '7d') document.getElementById('banDays').value = 7;
+      if (time === '15d') document.getElementById('banDays').value = 15;
+      if (time === '30d') document.getElementById('banDays').value = 30;
+      if (time === '3y') document.getElementById('banYears').value = 3;
+      if (time === '10y') document.getElementById('banYears').value = 10;
+      if (time === '100y') document.getElementById('banYears').value = 100;
+    };
+  });
+
+  // Xử lý khi chọn lý do có sẵn
+  selectReason.onchange = () => {
+    if (selectReason.value !== 'custom') {
+      inputReason.value = selectReason.value;
+      // Nếu là lý do bất thường (index 1), không khóa time (để logic tự tính)
+      if (selectReason.selectedIndex === 1) {
+        // Để trống time, JS bên dưới sẽ tự động tính
+        timeInputs.forEach(id => document.getElementById(id).value = '');
+      } else {
+        // Các lý do khác tự động khóa 3 năm
+        timeInputs.forEach(id => document.getElementById(id).value = '');
+        document.getElementById('banYears').value = 3;
+      }
+    } else {
+      inputReason.value = '';
+    }
+  };
+
+  btnConfirm.onclick = async () => {
+    const uname = document.getElementById('banUsername').value;
+    const reason = inputReason.value.trim();
+    if (!reason) return alert('Vui lòng nhập lý do cấm!');
+
+    const userRef = db.ref(`users/${uname}`);
+    const snap = await userRef.once('value');
+    const u = snap.val();
+
+    let banDurationMs = 0;
+    
+    // Nếu chọn lý do bất thường (index 1)
+    if (selectReason.selectedIndex === 1) {
+      let strike = u.banCount || 0; // Lấy số lần vi phạm trước đó
+      strike++; // Tăng lên 1
+      
+      if (strike === 1) banDurationMs = 1 * 24 * 60 * 60 * 1000; // 1 ngày
+      else if (strike === 2) banDurationMs = 3 * 24 * 60 * 60 * 1000; // 3 ngày
+      else if (strike === 3) banDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+      else {
+        banDurationMs = 3 * 365 * 24 * 60 * 60 * 1000; // 3 năm
+        strike = 0; // Reset lại chu kỳ sau khi hết 3 năm
+      }
+      await userRef.update({ banCount: strike });
+    } else {
+      // Các lý do khác tính theo thời gian nhập vào
+      const y = parseInt(document.getElementById('banYears').value) || 0;
+      const d = parseInt(document.getElementById('banDays').value) || 0;
+      const h = parseInt(document.getElementById('banHours').value) || 0;
+      const m = parseInt(document.getElementById('banMinutes').value) || 0;
+      const s = parseInt(document.getElementById('banSeconds').value) || 0;
+      
+      const now = new Date();
+      now.setFullYear(now.getFullYear() + y);
+      now.setDate(now.getDate() + d);
+      now.setHours(now.getHours() + h);
+      now.setMinutes(now.getMinutes() + m);
+      now.setSeconds(now.getSeconds() + s);
+      
+      banDurationMs = now.getTime() - Date.now();
+    }
+
+    if (banDurationMs <= 0) return alert('Thời gian cấm không hợp lệ!');
+
+    const banUntil = Date.now() + banDurationMs;
+    await userRef.update({ banUntil, banReason: reason });
+    await writeLog(CURRENT_USER.username, 'BAN_ACCOUNT', `Cấm ${uname} đến ${new Date(banUntil).toLocaleString('vi-VN')} - Lý do: ${reason}`);
+
+    modal.classList.add('hidden');
+    loadUserTable();
+  };
+}
+
+function openBanModal(uname) {
+  document.getElementById('banUsername').value = uname;
+  document.getElementById('banReasonSelect').value = 'custom';
+  document.getElementById('banReasonInput').value = '';
+  ['banYears', 'banDays', 'banHours', 'banMinutes', 'banSeconds'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('banModal').classList.remove('hidden');
+}
+
+// ================== CÁC HÀM CŨ GIỮ NGUYÊN ==================
 function bindCreateAccount() {
   document.getElementById('createAccountBtn').addEventListener('click', async () => {
     const msg = document.getElementById('createMsg');
@@ -47,22 +202,11 @@ function bindCreateAccount() {
     const password = document.getElementById('createPassword').value;
 
     if (!username || !password) return flash(msg, 'Vui lòng nhập đủ thông tin');
-
     const checkSnap = await db.ref(`users/${username}`).once('value');
     if (checkSnap.exists()) return flash(msg, 'Tên đăng nhập đã tồn tại');
 
     const privateKey = generatePrivateKey(type);
-
-    await db.ref(`users/${username}`).set({
-      username,
-      password,
-      role: type,
-      privateKey,
-      balance: 0,
-      createdAt: Date.now(),
-      createdBy: CURRENT_USER.username
-    });
-
+    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
     await writeLog(CURRENT_USER.username, 'CREATE_ACCOUNT', `Tạo tài khoản ${type}: ${username}`);
 
     document.getElementById('resType').textContent = type;
@@ -70,11 +214,7 @@ function bindCreateAccount() {
     document.getElementById('resPassword').textContent = password;
     document.getElementById('resKey').textContent = privateKey;
     document.getElementById('createResult').classList.remove('hidden');
-    document.getElementById('copyKeyBtn').onclick = () => {
-      navigator.clipboard.writeText(privateKey);
-      flash(msg, 'Đã sao chép private key', '#00e5ff');
-    };
-
+    document.getElementById('copyKeyBtn').onclick = () => { navigator.clipboard.writeText(privateKey); flash(msg, 'Đã sao chép private key', '#00e5ff'); };
     flash(msg, 'Tạo tài khoản thành công', '#00e5ff');
     document.getElementById('createUsername').value = '';
     document.getElementById('createPassword').value = '';
@@ -84,14 +224,11 @@ function bindCreateAccount() {
 function loadBalanceUserOptions() {
   const sel = document.getElementById('balanceUserSelect');
   if (!sel) return;
-  
   if (listeners['users']) listeners['users'].off();
   listeners['users'] = db.ref('users');
-
   listeners['users'].on('value', snap => {
     const users = snap.val() || {};
     const currentVal = sel.value; 
-    
     sel.innerHTML = '';
     for (const uname in users) {
       if (users[uname].role === 'USER') {
@@ -116,9 +253,7 @@ function bindBalanceTab() {
 
     const userRef = db.ref(`users/${uname}/balance`);
     const snap = await userRef.once('value');
-    const cur = snap.val() || 0;
-    await userRef.set(cur + amount);
-
+    await userRef.set((snap.val() || 0) + amount);
     await writeLog(CURRENT_USER.username, 'ADD_BALANCE', `Cộng ${formatMoney(amount)}đ cho ${uname}`);
     flash(msg, `Đã cộng ${formatMoney(amount)}đ cho ${uname}`, '#00e5ff');
     document.getElementById('balanceAmount').value = '';
@@ -126,29 +261,18 @@ function bindBalanceTab() {
 }
 
 function bindDenomButtons() {
-  document.querySelectorAll('.denom').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('balanceAmount').value = btn.dataset.amount;
-    });
+  document.querySelectorAll('.denom:not(.ban-preset)').forEach(btn => {
+    btn.addEventListener('click', () => { document.getElementById('balanceAmount').value = btn.dataset.amount; });
   });
 }
 
 function bindKeyTabs() {
-  const map = {
-    '1d':  { input: 'keyInput1d',  addBtn: 'addKey1d',  list: 'keyList1d'  },
-    '3d':  { input: 'keyInput3d',  addBtn: 'addKey3d',  list: 'keyList3d'  },
-    '7d':  { input: 'keyInput7d',  addBtn: 'addKey7d',  list: 'keyList7d'  },
-    '30d': { input: 'keyInput30d', addBtn: 'addKey30d', list: 'keyList30d' }
-  };
-
+  const map = { '1d': { input: 'keyInput1d', addBtn: 'addKey1d', list: 'keyList1d' }, '3d': { input: 'keyInput3d', addBtn: 'addKey3d', list: 'keyList3d' }, '7d': { input: 'keyInput7d', addBtn: 'addKey7d', list: 'keyList7d' }, '30d': { input: 'keyInput30d', addBtn: 'addKey30d', list: 'keyList30d' } };
   for (const pack in map) {
     const cfg = map[pack];
     const addBtn = document.getElementById(cfg.addBtn);
-    if (!addBtn) continue;
-
-    if (addBtn.dataset.bound === '1') continue;
+    if (!addBtn || addBtn.dataset.bound === '1') continue;
     addBtn.dataset.bound = '1';
-
     addBtn.addEventListener('click', async () => {
       const val = document.getElementById(cfg.input).value.trim();
       if (!val) return;
@@ -156,7 +280,6 @@ function bindKeyTabs() {
       await writeLog(CURRENT_USER.username, 'ADD_KEY', `Thêm key vào gói ${pack}: ${val}`);
       document.getElementById(cfg.input).value = '';
     });
-
     renderKeyList(pack, cfg.list);
   }
 }
@@ -164,25 +287,19 @@ function bindKeyTabs() {
 function renderKeyList(pack, listId) {
   const ul = document.getElementById(listId);
   if (!ul) return;
-  
   const refName = `keys_${pack}`;
   if (listeners[refName]) listeners[refName].off();
   listeners[refName] = db.ref(`keys/${pack}`);
-  
   listeners[refName].on('value', snap => {
     const obj = snap.val() || {};
     ul.innerHTML = '';
     const entries = Object.entries(obj);
-    if (entries.length === 0) {
-      ul.innerHTML = '<li style="color:#666">Chưa có key nào</li>';
-      return;
-    }
+    if (entries.length === 0) return ul.innerHTML = '<li style="color:#666">Chưa có key nào</li>';
     entries.forEach(([id, key]) => {
       const li = document.createElement('li');
       li.innerHTML = `<code>${key}</code>`;
       const del = document.createElement('button');
-      del.textContent = 'Xóa';
-      del.className = 'btn-secondary';
+      del.textContent = 'Xóa'; del.className = 'btn-secondary';
       del.onclick = async () => {
         await db.ref(`keys/${pack}/${id}`).remove();
         await writeLog(CURRENT_USER.username, 'DELETE_KEY', `Xóa key khỏi gói ${pack}: ${key}`);
@@ -196,28 +313,19 @@ function renderKeyList(pack, listId) {
 function loadLogs() {
   const ul = document.getElementById('logList');
   if (!ul) return;
-  
   if (listeners['logs']) listeners['logs'].off();
   listeners['logs'] = db.ref('logs');
-
   listeners['logs'].orderByChild('time').limitToLast(100).on('value', snap => {
     const obj = snap.val() || {};
     ul.innerHTML = '';
     const arr = Object.entries(obj).reverse();
-    if (arr.length === 0) {
-      ul.innerHTML = '<li style="color:#666">Chưa có log</li>';
-      return;
-    }
+    if (arr.length === 0) return ul.innerHTML = '<li style="color:#666">Chưa có log</li>';
     arr.forEach(([id, log]) => {
       const li = document.createElement('li');
       const t = new Date(log.time).toLocaleString('vi-VN');
-      
-      // Làm nổi bật log mua Vượt Link
       let colorStyle = '';
-      if (log.action === 'BUY_BYPASS') {
-        colorStyle = 'color: #ff3b5c; font-weight: bold; border: 1px solid rgba(255, 59, 92, 0.3); background: rgba(255, 59, 92, 0.1); border-radius: 8px; padding: 0 6px;';
-      }
-      
+      if (log.action === 'BUY_BYPASS') colorStyle = 'color: #ff3b5c; font-weight: bold; border: 1px solid rgba(255, 59, 92, 0.3); background: rgba(255, 59, 92, 0.1); border-radius: 8px; padding: 0 6px;';
+      if (log.action === 'BAN_ACCOUNT') colorStyle = 'color: #ff3b5c; font-weight: bold;';
       li.innerHTML = `<span style="${colorStyle}">[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
       ul.appendChild(li);
     });
