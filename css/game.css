@@ -19,7 +19,7 @@
   color: #ffd700;
 }
 
-/* Lưới thẻ game (Hiện 1 ô vuông) */
+/* Lưới thẻ game */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -38,7 +38,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1 / 1; /* Tạo hình vuông */
+  aspect-ratio: 1 / 1;
 }
 
 .game-card:hover {
@@ -49,7 +49,7 @@
 
 .game-card.locked {
   opacity: 0.7;
-  cursor: pointer; /* Vẫn cho click để hiện thông báo mua */
+  cursor: pointer;
 }
 .game-card.locked:hover {
   border-color: #ff3b5c;
@@ -92,10 +92,14 @@
   border-radius: 12px;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
   display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 #gameCanvas {
   display: block;
   border-radius: 10px;
+  max-width: 100%;
+  height: auto;
 }
 .game-hud {
   display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 18px; max-width: 600px; margin-left: auto; margin-right: auto;
@@ -104,7 +108,7 @@
 .hud-p2 { color: #00ff88; }
 .hud-time { color: #ff3b5c; font-size: 20px; }
 
-/* Cài đặt trước khi chơi (Tên, ghép trận) */
+/* Cài đặt trước khi chơi */
 .game-setup {
   max-width: 400px;
   margin: 0 auto 20px auto;
@@ -116,6 +120,33 @@
 }
 .game-setup .btn-row {
   display: flex; gap: 10px;
+}
+
+/* PHÍM ĐIỀU HƯỚNG ẢO (CHỈ HIỆN TRÊN ĐIỆN THOẠI) */
+.mobile-controls {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.dpad-btn {
+  width: 60px; height: 60px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  font-size: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex; justify-content: center; align-items: center;
+  user-select: none;
+  touch-action: manipulation;
+}
+.dpad-btn:active { background: #00e5ff; color: #000; }
+
+@media (max-width: 768px) {
+  .mobile-controls { display: flex; }
+  #gameCanvas { width: 100%; height: auto; } 
 }
 
 /* Modal thông báo kết quả Game */
