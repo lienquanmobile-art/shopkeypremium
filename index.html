@@ -13,13 +13,10 @@
   <section id="loginScreen" class="login-screen">
     <div class="login-card">
       <h2>BLACK SEVER KEY PREMIUM</h2>
-
       <div class="login-tabs">
         <button class="tab-btn active" data-tab="normal">Đăng nhập</button>
         <button class="tab-btn" data-tab="key">Đăng nhập bằng Key</button>
       </div>
-
-      <!-- Login thường -->
       <div id="normalLogin" class="login-form">
         <label>Tên đăng nhập</label>
         <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" />
@@ -27,14 +24,11 @@
         <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" />
         <button id="loginBtn" class="btn-primary">Đăng nhập</button>
       </div>
-
-      <!-- Login bằng key -->
       <div id="keyLogin" class="login-form hidden">
         <label>Private Key</label>
         <input type="text" id="loginKey" placeholder="BLACKUSER_XXXXXXXX" />
         <button id="keyLoginBtn" class="btn-primary">Đăng nhập bằng Key</button>
       </div>
-
       <p id="loginMsg" class="msg"></p>
     </div>
   </section>
@@ -71,33 +65,16 @@
         <button class="home-tab" data-home="history">Lịch sử mua hàng</button>
       </div>
 
-      <!-- Mua key (CHIA 2 BÊN) -->
       <div id="home-buykey" class="home-content">
         <div class="buy-layout">
-          
-          <!-- BÊN TRÁI: MUA KEY THƯỜNG -->
           <div class="buy-left">
             <h3 class="section-title">Mua Key Thường</h3>
             <div class="package-grid">
-              <div class="package-card" data-package="1d">
-                <span class="sale-badge">SALE</span>
-                <h3>Gói 1 ngày</h3>
-                <p class="price">2.500đ</p>
-              </div>
-              <div class="package-card" data-package="3d">
-                <h3>Gói 3 ngày</h3>
-                <p class="price">40.000đ</p>
-              </div>
-              <div class="package-card" data-package="7d">
-                <h3>Gói 7 ngày</h3>
-                <p class="price">75.000đ</p>
-              </div>
-              <div class="package-card" data-package="30d">
-                <h3>Gói 30 ngày</h3>
-                <p class="price">250.000đ</p>
-              </div>
+              <div class="package-card" data-package="1d"><span class="sale-badge">SALE</span><h3>Gói 1 ngày</h3><p class="price">2.500đ</p></div>
+              <div class="package-card" data-package="3d"><h3>Gói 3 ngày</h3><p class="price">40.000đ</p></div>
+              <div class="package-card" data-package="7d"><h3>Gói 7 ngày</h3><p class="price">75.000đ</p></div>
+              <div class="package-card" data-package="30d"><h3>Gói 30 ngày</h3><p class="price">250.000đ</p></div>
             </div>
-
             <div class="buy-box">
               <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
               <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
@@ -105,8 +82,6 @@
               <p id="buyMsg" class="msg"></p>
             </div>
           </div>
-
-          <!-- BÊN PHẢI: GÓI VƯỢT LINK -->
           <div class="buy-right">
             <h3 class="section-title">Gói Vượt Link</h3>
             <div class="package-card v-link-card">
@@ -114,7 +89,6 @@
               <p class="price">500đ</p>
               <p class="desc">Nhận link vượt link siêu tốc</p>
             </div>
-
             <div class="buy-box">
               <p>Sản phẩm: <strong>Gói Vượt Link</strong></p>
               <p>Số tiền: <strong>500</strong> VND</p>
@@ -122,23 +96,13 @@
               <p id="bypassMsg" class="msg"></p>
             </div>
           </div>
-          
         </div>
       </div>
-
-      <!-- Nạp tiền -->
       <div id="home-deposit" class="home-content hidden">
-        <div class="deposit-dev">
-          <h3>🚧 Tính năng đang được phát triển 🚧</h3>
-        </div>
+        <div class="deposit-dev"><h3>🚧 Tính năng đang được phát triển 🚧</h3></div>
       </div>
-
-      <!-- Lịch sử mua hàng -->
       <div id="home-history" class="home-content hidden">
-        <div class="history-box">
-          <h3>Lịch sử mua hàng</h3>
-          <ul id="historyList" class="history-list"></ul>
-        </div>
+        <div class="history-box"><h3>Lịch sử mua hàng</h3><ul id="historyList" class="history-list"></ul></div>
       </div>
     </section>
 
@@ -151,23 +115,17 @@
         <button class="admin-tab" data-admin="key3d">Key 3 ngày</button>
         <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
         <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
+        <button class="admin-tab owner-only" data-admin="list">Danh sách tài khoản</button>
         <button class="admin-tab owner-only" data-admin="log">Log</button>
       </div>
 
-      <!-- Tạo tài khoản -->
       <div id="admin-create" class="admin-content">
         <h3>Tạo tài khoản</h3>
         <label>Loại tài khoản</label>
-        <select id="createType">
-          <option value="USER">User</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-        <label>Tên đăng nhập</label>
-        <input type="text" id="createUsername" />
-        <label>Mật khẩu</label>
-        <input type="password" id="createPassword" />
+        <select id="createType"><option value="USER">User</option><option value="ADMIN">Admin</option></select>
+        <label>Tên đăng nhập</label><input type="text" id="createUsername" />
+        <label>Mật khẩu</label><input type="password" id="createPassword" />
         <button id="createAccountBtn" class="btn-primary">Tạo</button>
-
         <div id="createResult" class="result-box hidden">
           <p>Loại tài khoản: <strong id="resType"></strong></p>
           <p>Tên đăng nhập: <strong id="resUsername"></strong></p>
@@ -178,63 +136,46 @@
         <p id="createMsg" class="msg"></p>
       </div>
 
-      <!-- Thêm số dư -->
       <div id="admin-balance" class="admin-content hidden">
         <h3>Thêm số dư</h3>
-        <label>Tài khoản (User)</label>
-        <select id="balanceUserSelect"></select>
-        <label>Số tiền</label>
-        <input type="number" id="balanceAmount" placeholder="Nhập số tiền" />
+        <label>Tài khoản (User)</label><select id="balanceUserSelect"></select>
+        <label>Số tiền</label><input type="number" id="balanceAmount" placeholder="Nhập số tiền" />
         <div class="denom-grid">
-          <button class="denom" data-amount="5000">5.000VND</button>
-          <button class="denom" data-amount="10000">10.000VND</button>
-          <button class="denom" data-amount="20000">20.000VND</button>
-          <button class="denom" data-amount="50000">50.000VND</button>
-          <button class="denom" data-amount="100000">100.000VND</button>
-          <button class="denom" data-amount="200000">200.000VND</button>
+          <button class="denom" data-amount="5000">5.000VND</button><button class="denom" data-amount="10000">10.000VND</button>
+          <button class="denom" data-amount="20000">20.000VND</button><button class="denom" data-amount="50000">50.000VND</button>
+          <button class="denom" data-amount="100000">100.000VND</button><button class="denom" data-amount="200000">200.000VND</button>
           <button class="denom" data-amount="500000">500.000VND</button>
         </div>
         <button id="addBalanceBtn" class="btn-primary">Thêm</button>
         <p id="balanceMsg" class="msg"></p>
       </div>
 
-      <!-- Key 1 ngày -->
-      <div id="admin-key1d" class="admin-content hidden">
-        <h3>Key 1 ngày</h3>
-        <input type="text" id="keyInput1d" placeholder="Thêm key của bạn (nội dung gì cũng được)" />
-        <button id="addKey1d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList1d" class="key-list"></ul>
+      <div id="admin-key1d" class="admin-content hidden"><h3>Key 1 ngày</h3><input type="text" id="keyInput1d" placeholder="Thêm key của bạn" /><button id="addKey1d" class="btn-primary">+ Thêm</button><ul id="keyList1d" class="key-list"></ul></div>
+      <div id="admin-key3d" class="admin-content hidden"><h3>Key 3 ngày</h3><input type="text" id="keyInput3d" placeholder="Thêm key của bạn" /><button id="addKey3d" class="btn-primary">+ Thêm</button><ul id="keyList3d" class="key-list"></ul></div>
+      <div id="admin-key7d" class="admin-content hidden"><h3>Key 7 ngày</h3><input type="text" id="keyInput7d" placeholder="Thêm key của bạn" /><button id="addKey7d" class="btn-primary">+ Thêm</button><ul id="keyList7d" class="key-list"></ul></div>
+      <div id="admin-key30d" class="admin-content hidden"><h3>Key 30 ngày</h3><input type="text" id="keyInput30d" placeholder="Thêm key của bạn" /><button id="addKey30d" class="btn-primary">+ Thêm</button><ul id="keyList30d" class="key-list"></ul></div>
+      
+      <!-- BẢNG DANH SÁCH TÀI KHOẢN -->
+      <div id="admin-list" class="admin-content hidden">
+        <h3>Danh sách tài khoản</h3>
+        <div class="table-responsive">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Tài khoản</th>
+                <th>Số dư</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody">
+              <!-- Dữ liệu load bằng JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Key 3 ngày -->
-      <div id="admin-key3d" class="admin-content hidden">
-        <h3>Key 3 ngày</h3>
-        <input type="text" id="keyInput3d" placeholder="Thêm key của bạn" />
-        <button id="addKey3d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList3d" class="key-list"></ul>
-      </div>
-
-      <!-- Key 7 ngày -->
-      <div id="admin-key7d" class="admin-content hidden">
-        <h3>Key 7 ngày</h3>
-        <input type="text" id="keyInput7d" placeholder="Thêm key của bạn" />
-        <button id="addKey7d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList7d" class="key-list"></ul>
-      </div>
-
-      <!-- Key 30 ngày -->
-      <div id="admin-key30d" class="admin-content hidden">
-        <h3>Key 30 ngày</h3>
-        <input type="text" id="keyInput30d" placeholder="Thêm key của bạn" />
-        <button id="addKey30d" class="btn-primary">+ Thêm</button>
-        <ul id="keyList30d" class="key-list"></ul>
-      </div>
-
-      <!-- Log -->
-      <div id="admin-log" class="admin-content hidden owner-only">
-        <h3>Log hệ thống</h3>
-        <ul id="logList" class="log-list"></ul>
-      </div>
+      <div id="admin-log" class="admin-content hidden owner-only"><h3>Log hệ thống</h3><ul id="logList" class="log-list"></ul></div>
     </section>
   </main>
 
@@ -243,9 +184,7 @@
     <div class="modal-content">
       <h3 class="modal-title">Thanh toán thành công!</h3>
       <p class="modal-desc">Key của bạn là:</p>
-      <div class="modal-key-box">
-        <code id="modalKeyValue">KEY_XXXXXXXX</code>
-      </div>
+      <div class="modal-key-box"><code id="modalKeyValue">KEY_XXXXXXXX</code></div>
       <button id="modalCopyBtn" class="btn-primary">Sao chép</button>
       <button id="modalCloseBtn" class="btn-secondary" style="width:100%">Đóng</button>
     </div>
@@ -256,11 +195,64 @@
     <div class="modal-content" style="border-color: #ff3b5c; box-shadow: 0 10px 40px rgba(255, 59, 92, 0.2);">
       <h3 class="modal-title" style="color: #ff3b5c;">Thanh toán thành công!</h3>
       <p class="modal-desc">Link getkey của bạn là:</p>
-      <div class="modal-key-box" style="border-color: #ff3b5c;">
-        <code id="modalBypassValue" style="font-size: 16px; word-break: break-all;">https://...</code>
-      </div>
+      <div class="modal-key-box" style="border-color: #ff3b5c;"><code id="modalBypassValue" style="font-size: 16px; word-break: break-all;">https://...</code></div>
       <button id="modalBypassCopyBtn" class="btn-primary" style="background: linear-gradient(135deg, #ff3b5c, #8a2be2);">Sao chép</button>
       <button id="modalBypassCloseBtn" class="btn-secondary" style="width:100%">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL CẤM TÀI KHOẢN -->
+  <div id="banModal" class="modal-overlay hidden">
+    <div class="modal-content" style="border-color: #ff3b5c; max-width: 500px; text-align: left;">
+      <h3 class="modal-title" style="color: #ff3b5c; text-align: center;">Cấm Tài Khoản</h3>
+      
+      <label>Tài khoản:</label>
+      <input type="text" id="banUsername" readonly style="background: rgba(255,255,255,0.1); cursor: not-allowed;" />
+      
+      <label>Thời gian cấm:</label>
+      <div class="ban-time-inputs">
+        <input type="number" id="banYears" placeholder="Năm" min="0" />
+        <input type="number" id="banDays" placeholder="Ngày" min="0" />
+        <input type="number" id="banHours" placeholder="Giờ" min="0" />
+        <input type="number" id="banMinutes" placeholder="Phút" min="0" />
+        <input type="number" id="banSeconds" placeholder="Giây" min="0" />
+      </div>
+      <div class="denom-grid" style="margin-top: 10px;">
+        <button class="denom ban-preset" data-time="1d">1 ngày</button>
+        <button class="denom ban-preset" data-time="3d">3 ngày</button>
+        <button class="denom ban-preset" data-time="7d">7 ngày</button>
+        <button class="denom ban-preset" data-time="15d">15 ngày</button>
+        <button class="denom ban-preset" data-time="30d">30 ngày</button>
+        <button class="denom ban-preset" data-time="3y">3 năm</button>
+        <button class="denom ban-preset" data-time="10y">10 năm</button>
+        <button class="denom ban-preset" data-time="100y">100 năm</button>
+      </div>
+
+      <label>Lý do cấm:</label>
+      <select id="banReasonSelect" style="margin-bottom: 10px;">
+        <option value="custom">-- Tự nhập lý do --</option>
+        <option value="Tài khoản có dấu hiệu bất thường, vui lòng không chia sẽ thông tin tài khoản và liên hệ 0942.836.367 để đổi lại mật khẩu">Bất thường (Khóa tự động tăng)</option>
+        <option value="Hệ thống phát hiện bạn can thiệp vào hệ thống của web và sever">Can thiệp hệ thống (Khóa 3 năm)</option>
+        <option value="Hệ thống phát hiện tài khoản của bạn có dấu hiệu buff số dư, buff vàng">Buff số dư/vàng (Khóa 3 năm)</option>
+        <option value="Hệ thống phát hiện bạn dùng phần mềm thứ 3 can thiệp web và sever">Dùng phần mềm thứ 3 (Khóa 3 năm)</option>
+      </select>
+      <input type="text" id="banReasonInput" placeholder="Nhập lý do chi tiết..." />
+
+      <div style="display:flex; gap: 10px; margin-top: 20px;">
+        <button id="confirmBanBtn" class="btn-primary" style="background: #ff3b5c; box-shadow: 0 8px 20px rgba(255, 59, 92, 0.3);">Cấm</button>
+        <button id="cancelBanBtn" class="btn-secondary" style="flex: 1;">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL THÔNG BÁO BỊ CẤM (DÀNH CHO USER) -->
+  <div id="bannedNoticeModal" class="modal-overlay hidden" style="z-index: 10001;">
+    <div class="modal-content" style="border-color: #ff3b5c; text-align: left;">
+      <h3 class="modal-title" style="color: #ff3b5c; text-align: center; margin-bottom: 20px;">| Lưu ý |</h3>
+      <p style="font-size: 16px; line-height: 1.6; color: #fff; text-align: center; margin-bottom: 24px;" id="bannedMessage">
+        Bạn đã bị cấm!...
+      </p>
+      <button id="okBannedBtn" class="btn-primary" style="background: #ff3b5c; box-shadow: 0 8px 20px rgba(255, 59, 92, 0.3);">OK</button>
     </div>
   </div>
 
