@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện bàn phím
   window.addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.preventDefault(); 
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newDir) processInput(newDir);
   });
 
-  // Bắt sự kiện phím ảo (Mobile) - Đã fix kẹt focus
   document.querySelectorAll('.dpad-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault(); 
@@ -155,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
+  // --- CHẾ ĐỘ GHÉP TRẬN PVP (ĐÃ FIX LỖI ĐỒNG BỘ) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -162,36 +161,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
+    // Xóa listener cũ
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
-    
-    // Dọn dẹp hàng đợi cũ
-    const allQueues = (await queueRef.once('value')).val() || {};
-    const now = Date.now();
-    const updatesToDelete = {};
-    for (const key in allQueues) {
-      if (key === CURRENT_USER.username || (now - allQueues[key].timestamp) > 15000) {
-        updatesToDelete[key] = null;
-      }
-    }
-    if (Object.keys(updatesToDelete).length > 0) {
-      await queueRef.update(updatesToDelete);
-    }
 
-    const cleanQueues = (await queueRef.once('value')).val() || {};
-    const waitingPlayer = Object.keys(cleanQueues).find(k => k !== CURRENT_USER.username);
+    // Đảm bảo xóa tên mình khỏi hàng đợi cũ trước khi tìm trận mới
+    await myRef.remove();
+
+    // Quét xem có ai đang đợi không
+    const snap = await queueRef.once('value');
+    const queue = snap.val() || {};
+    const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
-      // TÌM THẤY NGƯỜI CHỜ -> NGƯỜI TẠO LÀ PLAYER 2
+      // NẾU CÓ NGƯỜI ĐỢI -> TẠO TRẬN NGAY
       const newMatchId = 'match_' + Date.now();
-      isPlayer1 = false; // QUAN TRỌNG: Người tạo phòng là P2
+      isPlayer1 = false; // Người tạo phòng (bấm sau) là P2
       
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
-        p1_name: waitingPlayer,
-        p2_name: CURRENT_USER.username,
+        p1_name: waitingPlayer, // Người đợi là P1
+        p2_name: CURRENT_USER.username, // Mình là P2
         p1_started: false,
         p2_started: false,
         p1_score: 0, p2_score: 0,
@@ -204,11 +196,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       await myRef.remove();
-      joinMatch(newMatchId, false); // false = Player 2
+      joinMatch(newMatchId, false); 
     } else {
-      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI (SẼ LÀ PLAYER 1)
-      await myRef.set({ timestamp: now });
+      // NẾU KHÔNG CÓ AI -> TỰ VÀO HÀNG ĐỢI VÀ CHỜ
+      await myRef.set({ timestamp: Date.now() });
       
+      // Đặt đồng hồ 15 giây, nếu không ai ghép thì hủy
       const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
@@ -216,9 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 15000);
 
+      // Lắng nghe xem có ai tạo trận cho mình không
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
-        // Nếu tên mình là p1 trong trận được tạo -> Mình là Player 1
         if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
