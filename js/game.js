@@ -7,11 +7,13 @@ let isPlayer1 = false;
 let currentUserSnakeName = "Player";
 let gameState = null;
 let gameUnlocked = false;
+let matchListener = null;
+let localTimer = null;
 
 const TILE_SIZE = 20;
 const COLS = 30;
 const ROWS = 20;
-const TICK_RATE = 150;
+const TICK_RATE = 250; // TỐC ĐỘ RẮN (Chậm rãi, dễ chơi)
 const GAME_TIME = 30;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện phím
+  // Bắt sự kiện phím (Gửi lên Firebase cho PvP)
   window.addEventListener('keydown', (e) => {
     if (!isGameRunning || !matchId) return;
     let newDir = null;
@@ -38,13 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Sự kiện click vào thẻ Game Rắn
+  // Click vào thẻ Game Rắn
   document.getElementById('snakeCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     if (gameUnlocked) {
       showGameSetup();
     } else {
-      // Mua game
       const cost = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER' ? 0 : 1000;
       const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
       const balance = snap.val().balance || 0;
@@ -65,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameMenu').classList.remove('hidden');
   });
 
-  // Lưu tên
+  // Lưu tên rắn
   document.getElementById('saveNameBtn')?.addEventListener('click', () => {
     const name = document.getElementById('snakeNameInput').value.trim();
     if (!name) return alert('Vui lòng nhập tên!');
@@ -73,11 +74,84 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('savedNameMsg').textContent = `Đã lưu tên: ${name}`;
   });
 
-  // Nút chơi
+  // --- CHẾ ĐỘ 1 PLAYER (OFFLINE) ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
-    alert('Chế độ 1 Player đang bảo trì! Vui lòng chơi 2 Player.');
+    matchId = null;
+    isPlayer1 = true;
+    document.getElementById('gameSetupArea').classList.add('hidden');
+    document.getElementById('gameBoard').classList.remove('hidden');
+    document.getElementById('gameBoard').style.display = 'block';
+    document.getElementById('scoreP2').parentElement.style.display = 'none'; // Ẩn P2
+    document.getElementById('gameArea').style.display = 'block';
+    document.querySelector('.game-hud').style.display = 'flex';
+    
+    let localSnake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
+    let localApple = { x: 15, y: 10 };
+    let localScore = 0;
+    let localTime = GAME_TIME;
+    let localDir = 'RIGHT';
+    let localRunning = true;
+    
+    document.getElementById('scoreP1').textContent = '0';
+    document.getElementById('gameTimer').textContent = localTime;
+
+    const localMove = () => {
+      if (!localRunning) return;
+
+      let head = { ...localSnake[0] };
+      if (localDir === 'UP') head.y--;
+      if (localDir === 'DOWN') head.y++;
+      if (localDir === 'LEFT') head.x--;
+      if (localDir === 'RIGHT') head.x++;
+
+      // Va chạm
+      if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || localSnake.some(s => s.x === head.x && s.y === head.y)) {
+        localRunning = false;
+        return endLocalGame(localScore);
+      }
+
+      localSnake.unshift(head);
+      if (head.x === localApple.x && head.y === localApple.y) {
+        localScore++;
+        document.getElementById('scoreP1').textContent = localScore;
+        // Sinh táo mới
+        let valid = false;
+        while(!valid) {
+          localApple = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+          if (!localSnake.some(s => s.x === localApple.x && s.y === localApple.y)) valid = true;
+        }
+      } else {
+        localSnake.pop();
+      }
+
+      drawLocalCanvas(localSnake, localApple);
+      setTimeout(localMove, TICK_RATE);
+    };
+
+    const localKeyHandler = (e) => {
+      if (!localRunning) return;
+      if (e.key === 'ArrowUp' && localDir !== 'DOWN') localDir = 'UP';
+      if (e.key === 'ArrowDown' && localDir !== 'UP') localDir = 'DOWN';
+      if (e.key === 'ArrowLeft' && localDir !== 'RIGHT') localDir = 'LEFT';
+      if (e.key === 'ArrowRight' && localDir !== 'LEFT') localDir = 'RIGHT';
+    };
+    window.addEventListener('keydown', localKeyHandler);
+
+    setTimeout(localMove, TICK_RATE);
+    localTimer = setInterval(() => {
+      if (!localRunning) return clearInterval(localTimer);
+      localTime--;
+      document.getElementById('gameTimer').textContent = localTime;
+      if (localTime <= 0) {
+        localRunning = false;
+        clearInterval(localTimer);
+        window.removeEventListener('keydown', localKeyHandler);
+        endLocalGame(localScore);
+      }
+    }, 1000);
   });
 
+  // --- CHẾ ĐỘ 2 PLAYER (GHÉP TRẬN) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -85,18 +159,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
+    // Dọn dẹp listener cũ để tránh lỗi "Ma trận"
+    if (matchListener) {
+      db.ref('matches').off('child_added', matchListener);
+      matchListener = null;
+    }
+
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
-      const newMatchId = 'match_' + Date.now();
+      // Nếu có người đang chờ -> Tạo trận mới
+      const newMatchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       isPlayer1 = true; 
       
       await db.ref(`matches/${newMatchId}`).set({
-        status: 'playing',
+        status: 'waiting', 
         p1_name: waitingPlayer,
         p2_name: CURRENT_USER.username,
+        p1_ready: false,
+        p2_ready: false,
         p1_score: 0, p2_score: 0,
         p1_snake: [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}],
         p2_snake: [{x: 24, y: 10}, {x: 25, y: 10}, {x: 26, y: 10}],
@@ -109,19 +192,22 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, true);
     } else {
+      // Không có ai -> Vào hàng đợi
       await myRef.set({ timestamp: Date.now() });
       
       const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
           statusTxt.textContent = 'Không có trận đấu nào!';
+          if (matchListener) db.ref('matches').off('child_added', matchListener);
         }
       }, 15000);
 
-      db.ref('matches').on('child_added', (snap) => {
+      matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
         if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
           clearTimeout(timeout);
+          db.ref('matches').off('child_added', matchListener);
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
         }
       });
@@ -153,6 +239,7 @@ function showGameSetup() {
   document.getElementById('gameMenu').classList.add('hidden');
   document.getElementById('gameSetupArea').classList.remove('hidden');
   document.getElementById('gameBoard').style.display = 'none';
+  document.getElementById('scoreP2').parentElement.style.display = 'block'; // Bật lại P2
 }
 
 function joinMatch(id, asPlayer1) {
@@ -162,36 +249,80 @@ function joinMatch(id, asPlayer1) {
   
   setTimeout(() => {
     document.getElementById('gameSetupArea').classList.add('hidden');
+    document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
-    startMultiplayerGame();
-  }, 1500);
+    
+    // HIỂN THỊ NÚT SẴN SÀNG
+    let readyBtn = document.getElementById('readyBtn');
+    if (!readyBtn) {
+      readyBtn = document.createElement('button');
+      readyBtn.id = 'readyBtn';
+      readyBtn.className = 'btn-primary';
+      readyBtn.style.marginTop = '20px';
+      readyBtn.textContent = 'SẴN SÀNG';
+      document.getElementById('gameBoard').insertBefore(readyBtn, document.getElementById('gameArea'));
+    }
+    readyBtn.classList.remove('hidden');
+    readyBtn.disabled = false;
+    readyBtn.textContent = 'SẴN SÀNG';
+    
+    // Ẩn bàn chơi cho đến khi cả 2 ready
+    document.getElementById('gameArea').style.display = 'none';
+    document.querySelector('.game-hud').style.display = 'none';
+
+    readyBtn.onclick = async () => {
+      readyBtn.disabled = true;
+      readyBtn.textContent = 'Đang chờ đối thủ...';
+      const myReadyKey = isPlayer1 ? 'p1_ready' : 'p2_ready';
+      await db.ref(`matches/${matchId}/${myReadyKey}`).set(true);
+    };
+
+    listenMatchStatus();
+  }, 1000);
 }
 
-function startMultiplayerGame() {
-  isGameRunning = true;
+function listenMatchStatus() {
   const matchRef = db.ref(`matches/${matchId}`);
-  
   matchRef.on('value', snap => {
-    if (!isGameRunning) return;
     const data = snap.val();
     if (!data) return;
-    gameState = data;
 
-    document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
-    document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
-    document.getElementById('gameTimer').textContent = data.timeLeft;
+    // Nếu cả 2 đã sẵn sàng -> Bắt đầu
+    if (data.p1_ready && data.p2_ready && data.status === 'waiting') {
+      matchRef.update({ status: 'playing' });
+    }
 
-    drawCanvas(data);
+    if (data.status === 'playing' && !isGameRunning) {
+      const readyBtn = document.getElementById('readyBtn');
+      if (readyBtn) readyBtn.classList.add('hidden');
+      document.getElementById('gameArea').style.display = 'block';
+      document.querySelector('.game-hud').style.display = 'flex';
+      startMultiplayerGame(data);
+    }
 
-    if (data.status === 'ended') {
-      const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
-      endGame(iWin, data);
+    if (isGameRunning) {
+      gameState = data;
+      document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
+      document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
+      document.getElementById('gameTimer').textContent = data.timeLeft;
+      drawCanvas(data);
+
+      if (data.status === 'ended') {
+        const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
+        endGame(iWin, data);
+      }
     }
   });
+}
 
+function startMultiplayerGame(initialData) {
+  isGameRunning = true;
+  gameState = initialData;
+  
+  // NẾU LÀ P1 (Chủ phòng) -> CHẠY SERVER ẢO
   if (isPlayer1) {
     gameInterval = setInterval(async () => {
-      if (!gameState || gameState.status === 'ended') return;
+      if (!gameState || gameState.status !== 'playing') return;
       
       const snap = await db.ref(`matches/${matchId}`).once('value');
       const state = snap.val();
@@ -292,6 +423,52 @@ function drawCanvas(state) {
   mySnake.forEach(seg => { ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE-2, TILE_SIZE-2); });
 }
 
+function drawLocalCanvas(snake, apple) {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0d0f17';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  for(let i=0; i<canvas.width; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+  for(let i=0; i<canvas.height; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+
+  if (apple) {
+    ctx.fillStyle = '#ff3b5c';
+    ctx.beginPath();
+    ctx.arc((apple.x * TILE_SIZE) + TILE_SIZE/2, (apple.y * TILE_SIZE) + TILE_SIZE/2, TILE_SIZE/2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffd700';
+  snake.forEach(seg => { ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE-2, TILE_SIZE-2); });
+}
+
+async function endLocalGame(score) {
+  clearInterval(localTimer);
+  document.getElementById('gameBoard').style.display = 'none';
+  document.getElementById('gameMenu').classList.remove('hidden');
+  document.getElementById('scoreP1').textContent = '0';
+  
+  let coinsEarned = score * 10;
+
+  if (coinsEarned > 0) {
+    const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
+    const currentCoins = snap.val().coins || 0;
+    await db.ref(`users/${CURRENT_USER.username}`).update({ coins: currentCoins + coinsEarned });
+  }
+
+  const resultHtml = `
+    <div class="game-result-modal" id="resultModal">
+      <div class="game-result-box">
+        <h2 class="game-win">KẾT THÚC!</h2>
+        <p style="font-size: 18px; margin-bottom: 10px;">Số táo ăn được: ${score}</p>
+        <p style="font-size: 20px; font-weight: bold; color: #ffd700; margin-bottom: 20px;">+${coinsEarned} xu</p>
+        <button class="btn-primary" onclick="document.getElementById('resultModal').remove(); loadGameData();">OK</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', resultHtml);
+}
+
 async function endGame(isWin, data) {
   if (!isGameRunning) return;
   isGameRunning = false;
@@ -304,7 +481,8 @@ async function endGame(isWin, data) {
 
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('gameMenu').classList.remove('hidden');
-  document.getElementById('gameSetupArea').classList.add('hidden');
+  document.getElementById('scoreP1').textContent = '0';
+  document.getElementById('scoreP2').textContent = '0';
 
   let coinsEarned = 0;
   const myScore = isPlayer1 ? data.p1_score : data.p2_score;
