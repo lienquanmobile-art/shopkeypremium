@@ -4,22 +4,85 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 20px;
   padding: 24px;
-  text-align: center;
 }
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
 .coin-display {
-  text-align: left;
   font-size: 18px;
   font-weight: bold;
   color: #ffd700;
-  margin-bottom: 20px;
 }
-.game-menu {
-  max-width: 500px;
-  margin: 0 auto;
+
+/* Lưới thẻ game */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
 }
-.game-menu input {
-  width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px; color: #fff; margin-bottom: 15px; text-align: center;
+
+.game-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1; /* Tạo hình vuông */
+}
+
+.game-card:hover {
+  border-color: #00e5ff;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.1);
+}
+
+.game-card.locked {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.game-card.locked:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: none;
+  box-shadow: none;
+}
+
+.game-card-icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.game-card h3 {
+  color: #fff;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.game-card p {
+  color: #a0aec0;
+  font-size: 13px;
+}
+
+.game-card .unlock-text {
+  color: #00e5ff;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* Khu vực chơi game (Bàn chơi) */
+#gameBoard {
+  display: none;
+  text-align: center;
 }
 #gameArea {
   position: relative;
@@ -28,18 +91,32 @@
   border: 2px solid #2a2a44;
   border-radius: 12px;
   box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-  display: none;
+  display: inline-block;
 }
 #gameCanvas {
   display: block;
   border-radius: 10px;
 }
 .game-hud {
-  display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold;
+  display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 18px;
 }
 .hud-p1 { color: #ffd700; }
 .hud-p2 { color: #00ff88; }
 .hud-time { color: #ff3b5c; font-size: 20px; }
+
+/* Cài đặt trước khi chơi (Tên, ghép trận) */
+.game-setup {
+  max-width: 400px;
+  margin: 0 auto 20px auto;
+  text-align: left;
+}
+.game-setup input {
+  width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; color: #fff; margin-bottom: 10px;
+}
+.game-setup .btn-row {
+  display: flex; gap: 10px;
+}
 
 /* Modal thông báo kết quả Game */
 .game-result-modal {
