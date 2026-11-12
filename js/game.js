@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.dpad-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault(); 
-      e.stopPropagation();
       if (!isGameRunning) return;
       processInput(btn.dataset.dir);
     });
@@ -88,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isGameRunning = false;
       isLocalGame = false;
       clearInterval(gameInterval);
-      gameInterval = null;
       if (matchId) {
         await db.ref(`matches/${matchId}`).remove();
         if (matchListener) db.ref('matches').off('child_added', matchListener);
@@ -122,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const localMove = () => {
       if (!isGameRunning || !isLocalGame) return;
-
       let head = { ...localSnake[0] };
       if (window.localDir === 'UP') head.y--;
       if (window.localDir === 'DOWN') head.y++;
@@ -146,14 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         localSnake.pop();
       }
-
       drawLocalCanvas(localSnake, localApple);
       setTimeout(localMove, TICK_RATE);
     };
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- CHẾ ĐỘ GHÉP TRẬN PVP (ĐÃ FIX LỖI ĐỒNG BỘ) ---
+  // --- GHÉP TRẬN PVP (CƠ CHẾ MỚI CHỐNG TRÙNG LẶP) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -161,29 +157,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
-    // Xóa listener cũ
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
 
-    // Đảm bảo xóa tên mình khỏi hàng đợi cũ trước khi tìm trận mới
-    await myRef.remove();
-
-    // Quét xem có ai đang đợi không
+    // Lấy danh sách hàng đợi
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
+    
+    // Tìm người chơi khác (BẮT BUỘC KHÁC TÊN MÌNH)
     const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
-      // NẾU CÓ NGƯỜI ĐỢI -> TẠO TRẬN NGAY
+      // CÓ NGƯỜI CHỜ -> TẠO TRẬN (Mình là P2)
       const newMatchId = 'match_' + Date.now();
-      isPlayer1 = false; // Người tạo phòng (bấm sau) là P2
+      isPlayer1 = false; 
       
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
-        p1_name: waitingPlayer, // Người đợi là P1
-        p2_name: CURRENT_USER.username, // Mình là P2
+        p1_name: waitingPlayer,
+        p2_name: CURRENT_USER.username,
         p1_started: false,
         p2_started: false,
         p1_score: 0, p2_score: 0,
@@ -195,13 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
         lastTick: Date.now()
       });
       
-      await myRef.remove();
+      await myRef.remove(); // Xóa mình khỏi hàng đợi
       joinMatch(newMatchId, false); 
     } else {
-      // NẾU KHÔNG CÓ AI -> TỰ VÀO HÀNG ĐỢI VÀ CHỜ
+      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI VÀ CHỜ
       await myRef.set({ timestamp: Date.now() });
       
-      // Đặt đồng hồ 15 giây, nếu không ai ghép thì hủy
       const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
@@ -209,10 +202,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 15000);
 
-      // Lắng nghe xem có ai tạo trận cho mình không
+      // Lắng nghe trận mới được tạo
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
-        if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
+        // Chỉ nhận trận nếu tên mình có trong đó
+        if (m && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
