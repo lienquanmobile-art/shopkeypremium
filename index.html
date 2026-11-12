@@ -68,37 +68,61 @@
       <div class="home-tabs">
         <button class="home-tab active" data-home="buykey">Mua Key</button>
         <button class="home-tab" data-home="deposit">Nạp tiền</button>
-        <!-- TAB LỊCH SỬ MỚI -->
         <button class="home-tab" data-home="history">Lịch sử mua hàng</button>
       </div>
 
-      <!-- Mua key -->
+      <!-- Mua key (CHIA 2 BÊN) -->
       <div id="home-buykey" class="home-content">
-        <div class="package-grid">
-          <div class="package-card" data-package="1d">
-            <span class="sale-badge">SALE</span>
-            <h3>Gói 1 ngày</h3>
-            <p class="price">2.500đ</p>
-          </div>
-          <div class="package-card" data-package="3d">
-            <h3>Gói 3 ngày</h3>
-            <p class="price">40.000đ</p>
-          </div>
-          <div class="package-card" data-package="7d">
-            <h3>Gói 7 ngày</h3>
-            <p class="price">75.000đ</p>
-          </div>
-          <div class="package-card" data-package="30d">
-            <h3>Gói 30 ngày</h3>
-            <p class="price">250.000đ</p>
-          </div>
-        </div>
+        <div class="buy-layout">
+          
+          <!-- BÊN TRÁI: MUA KEY THƯỜNG -->
+          <div class="buy-left">
+            <h3 class="section-title">Mua Key Thường</h3>
+            <div class="package-grid">
+              <div class="package-card" data-package="1d">
+                <span class="sale-badge">SALE</span>
+                <h3>Gói 1 ngày</h3>
+                <p class="price">2.500đ</p>
+              </div>
+              <div class="package-card" data-package="3d">
+                <h3>Gói 3 ngày</h3>
+                <p class="price">40.000đ</p>
+              </div>
+              <div class="package-card" data-package="7d">
+                <h3>Gói 7 ngày</h3>
+                <p class="price">75.000đ</p>
+              </div>
+              <div class="package-card" data-package="30d">
+                <h3>Gói 30 ngày</h3>
+                <p class="price">250.000đ</p>
+              </div>
+            </div>
 
-        <div class="buy-box">
-          <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
-          <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
-          <button id="buyNowBtn" class="btn-primary" disabled>Mua ngay</button>
-          <p id="buyMsg" class="msg"></p>
+            <div class="buy-box">
+              <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
+              <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
+              <button id="buyNowBtn" class="btn-primary" disabled>Mua ngay</button>
+              <p id="buyMsg" class="msg"></p>
+            </div>
+          </div>
+
+          <!-- BÊN PHẢI: GÓI VƯỢT LINK -->
+          <div class="buy-right">
+            <h3 class="section-title">Gói Vượt Link</h3>
+            <div class="package-card v-link-card">
+              <h3>Vượt Link Giá Rẻ</h3>
+              <p class="price">500đ</p>
+              <p class="desc">Nhận link vượt link siêu tốc</p>
+            </div>
+
+            <div class="buy-box">
+              <p>Sản phẩm: <strong>Gói Vượt Link</strong></p>
+              <p>Số tiền: <strong>500</strong> VND</p>
+              <button id="buyBypassBtn" class="btn-primary">Mua Ngay</button>
+              <p id="bypassMsg" class="msg"></p>
+            </div>
+          </div>
+          
         </div>
       </div>
 
@@ -109,13 +133,11 @@
         </div>
       </div>
 
-      <!-- LỊCH SỬ MUA HÀNG -->
+      <!-- Lịch sử mua hàng -->
       <div id="home-history" class="home-content hidden">
         <div class="history-box">
           <h3>Lịch sử mua hàng</h3>
-          <ul id="historyList" class="history-list">
-            <!-- Dữ liệu sẽ được load bằng JS -->
-          </ul>
+          <ul id="historyList" class="history-list"></ul>
         </div>
       </div>
     </section>
@@ -216,7 +238,7 @@
     </section>
   </main>
 
-  <!-- MODAL THANH TOÁN THÀNH CÔNG -->
+  <!-- MODAL THANH TOÁN MUA KEY -->
   <div id="successModal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="modal-title">Thanh toán thành công!</h3>
@@ -229,7 +251,19 @@
     </div>
   </div>
 
-  <!-- CHỈ CÓ DUY NHẤT 1 LẦN CÁC THẺ SCRIPT NÀY -->
+  <!-- MODAL THANH TOÁN VƯỢT LINK -->
+  <div id="bypassModal" class="modal-overlay hidden">
+    <div class="modal-content" style="border-color: #ff3b5c; box-shadow: 0 10px 40px rgba(255, 59, 92, 0.2);">
+      <h3 class="modal-title" style="color: #ff3b5c;">Thanh toán thành công!</h3>
+      <p class="modal-desc">Link getkey của bạn là:</p>
+      <div class="modal-key-box" style="border-color: #ff3b5c;">
+        <code id="modalBypassValue" style="font-size: 16px; word-break: break-all;">https://...</code>
+      </div>
+      <button id="modalBypassCopyBtn" class="btn-primary" style="background: linear-gradient(135deg, #ff3b5c, #8a2be2);">Sao chép</button>
+      <button id="modalBypassCloseBtn" class="btn-secondary" style="width:100%">Đóng</button>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="js/firebase-config.js"></script>
