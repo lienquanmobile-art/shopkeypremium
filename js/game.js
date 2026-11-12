@@ -4,7 +4,6 @@ let isGameRunning = false;
 let myDirection = 'RIGHT';
 let matchId = null;
 let isPlayer1 = false;
-let currentUserSnakeName = "Player";
 let gameState = null;
 let gameUnlocked = false;
 let matchListener = null;
@@ -13,8 +12,8 @@ let localTimer = null;
 const TILE_SIZE = 20;
 const COLS = 30;
 const ROWS = 20;
-const TICK_RATE = 250; 
-const GAME_TIME = 30;
+const TICK_RATE = 200; // Tốc độ rắn (200ms)
+const GAME_TIME = 30; // Chỉ dùng cho PvP
 
 document.addEventListener('DOMContentLoaded', () => {
   const gameTab = document.querySelector('[data-home="game"]');
@@ -30,17 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.preventDefault(); 
     }
-    
     if (!isGameRunning) return;
+    
     let newDir = null;
     if (e.key === 'ArrowUp') newDir = 'UP';
     if (e.key === 'ArrowDown') newDir = 'DOWN';
     if (e.key === 'ArrowLeft') newDir = 'LEFT';
     if (e.key === 'ArrowRight') newDir = 'RIGHT';
     
-    if (newDir) {
-      handleInput(newDir);
-    }
+    if (newDir) handleInput(newDir);
   });
 
   // Bắt sự kiện phím ảo trên điện thoại
@@ -75,50 +72,46 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameMenu').classList.remove('hidden');
   });
 
-  document.getElementById('saveNameBtn')?.addEventListener('click', () => {
-    const name = document.getElementById('snakeNameInput').value.trim();
-    if (!name) return alert('Vui lòng nhập tên!');
-    currentUserSnakeName = name;
-    document.getElementById('savedNameMsg').textContent = `Đã lưu tên: ${name}`;
-  });
-
-  // Nút Thoát Trận
-  document.getElementById('leaveGameBtn')?.addEventListener('click', () => {
-    if (confirm('Bạn có chắc muốn thoát trận? Trận đấu sẽ bị hủy.')) {
-      if (matchId) {
-        db.ref(`matches/${matchId}`).remove();
-        matchId = null;
-      }
+  // NÚT THOÁT TRẬN (Hoạt động triệt để)
+  document.getElementById('leaveGameBtn')?.addEventListener('click', async () => {
+    if (confirm('Bạn có chắc muốn thoát trận?')) {
+      isGameRunning = false;
       clearInterval(gameInterval);
       clearInterval(localTimer);
-      isGameRunning = false;
+      
+      if (matchId) {
+        await db.ref(`matches/${matchId}`).remove();
+        if (matchListener) db.ref('matches').off('child_added', matchListener);
+      }
+      matchId = null;
+      
       document.getElementById('gameBoard').style.display = 'none';
+      document.getElementById('gameSetupArea').classList.add('hidden');
       document.getElementById('gameMenu').classList.remove('hidden');
     }
   });
 
-  // --- CHẾ ĐỘ 1 PLAYER ---
+  // --- CHẾ ĐỘ 1 PLAYER (CHỈ KẾT THÚC KHI ĐÂM TƯỜNG) ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
     matchId = null;
     isPlayer1 = true;
+    isGameRunning = true;
+    
     document.getElementById('gameSetupArea').classList.add('hidden');
     document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
     document.getElementById('scoreP2').parentElement.style.display = 'none'; 
     document.getElementById('gameArea').style.display = 'block';
     document.querySelector('.game-hud').style.display = 'flex';
+    document.getElementById('gameTimer').textContent = '∞'; // Không giới hạn thời gian ở 1P
     
     let localSnake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
     let localApple = { x: 15, y: 10 };
     let localScore = 0;
-    let localTime = GAME_TIME;
     let localDir = 'RIGHT';
     let localRunning = true;
     
-    myDirection = 'RIGHT';
     document.getElementById('scoreP1').textContent = '0';
-    document.getElementById('gameTimer').textContent = localTime;
-    isGameRunning = true;
 
     const localMove = () => {
       if (!localRunning) return;
@@ -129,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (localDir === 'LEFT') head.x--;
       if (localDir === 'RIGHT') head.x++;
 
+      // Va chạm tường hoặc thân
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || localSnake.some(s => s.x === head.x && s.y === head.y)) {
         localRunning = false;
         isGameRunning = false;
@@ -158,32 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dir === 'LEFT' && localDir !== 'RIGHT') localDir = 'LEFT';
       if (dir === 'RIGHT' && localDir !== 'LEFT') localDir = 'RIGHT';
     };
-    window.localKeyHandler = (e) => {
-      let newDir = null;
-      if (e.key === 'ArrowUp') newDir = 'UP';
-      if (e.key === 'ArrowDown') newDir = 'DOWN';
-      if (e.key === 'ArrowLeft') newDir = 'LEFT';
-      if (e.key === 'ArrowRight') newDir = 'RIGHT';
-      if (newDir) window.mobile1PHandler(newDir);
-    };
-    window.addEventListener('keydown', window.localKeyHandler);
-
+    
     setTimeout(localMove, TICK_RATE);
-    localTimer = setInterval(() => {
-      if (!localRunning) return clearInterval(localTimer);
-      localTime--;
-      document.getElementById('gameTimer').textContent = localTime;
-      if (localTime <= 0) {
-        localRunning = false;
-        isGameRunning = false;
-        clearInterval(localTimer);
-        window.removeEventListener('keydown', window.localKeyHandler);
-        endLocalGame(localScore);
-      }
-    }, 1000);
   });
 
-  // --- CHẾ ĐỘ 2 PLAYER (PvP) ---
+  // --- CHẾ ĐỘ 2 PLAYER (PVP) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -191,18 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
-    if (matchListener) {
-      db.ref('matches').off('child_added', matchListener);
-      matchListener = null;
-    }
+    // Xóa hàng đợi cũ của bản thân (nếu có) để làm mới
+    await myRef.remove();
 
-    // Dọn dẹp hàng đợi cũ
-    await queueRef.child(CURRENT_USER.username).remove(); 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
+      // Tìm thấy người chờ -> Tạo trận mới
       const newMatchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       isPlayer1 = true; 
       
@@ -224,13 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, true);
     } else {
+      // Không có ai -> Tự vào hàng đợi
       await myRef.set({ timestamp: Date.now() });
       
       const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
           statusTxt.textContent = 'Không có trận đấu nào!';
-          if (matchListener) db.ref('matches').off('child_added', matchListener);
         }
       }, 15000);
 
@@ -238,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const m = snap.val();
         if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
           clearTimeout(timeout);
-          db.ref('matches').off('child_added', matchListener);
+          if (matchListener) db.ref('matches').off('child_added', matchListener);
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
         }
       });
@@ -291,6 +261,7 @@ function joinMatch(id, asPlayer1) {
     document.getElementById('gameSetupArea').classList.add('hidden');
     document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
+    document.getElementById('gameTimer').textContent = '30';
     
     let readyBtn = document.getElementById('readyBtn');
     if (!readyBtn) {
@@ -325,7 +296,6 @@ function listenMatchStatus() {
     const data = snap.val();
     if (!data) return;
 
-    // Tự động chuyển sang playing nếu cả 2 ready
     if (data.p1_ready && data.p2_ready && data.status === 'waiting') {
       matchRef.update({ status: 'playing' });
     }
@@ -356,8 +326,7 @@ function listenMatchStatus() {
 function startMultiplayerGame(initialData) {
   isGameRunning = true;
   gameState = initialData;
-  document.getElementById('gameArea').style.display = 'block';
-
+  
   if (isPlayer1) {
     gameInterval = setInterval(async () => {
       if (!gameState || gameState.status !== 'playing') return;
@@ -480,12 +449,12 @@ function drawLocalCanvas(snake, apple) {
 }
 
 async function endLocalGame(score) {
-  clearInterval(localTimer);
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('gameMenu').classList.remove('hidden');
   document.getElementById('scoreP1').textContent = '0';
   
   let coinsEarned = score * 10;
+
   if (coinsEarned > 0) {
     const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
     const currentCoins = snap.val().coins || 0;
