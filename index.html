@@ -118,7 +118,6 @@
               <div class="coin-display">Số xu: <span id="userCoins">0</span></div>
             </div>
             
-            <!-- CHỈ CÓ DUY NHẤT 1 Ô VUÔNG GAME RẮN -->
             <div class="game-grid">
               <div class="game-card locked" id="snakeCard">
                 <div class="game-card-icon">🐍</div>
@@ -129,7 +128,7 @@
             </div>
           </div>
 
-          <!-- KHU VỰC CÀI ĐẶT (Hiện khi đã mua và ấn vào ô vuông) -->
+          <!-- KHU VỰC CÀI ĐẶT -->
           <div id="gameSetupArea" class="hidden">
             <button id="backToMenuBtn" class="btn-secondary" style="margin-bottom: 20px;">← Quay lại</button>
             <div class="game-setup">
@@ -145,16 +144,28 @@
             </div>
           </div>
 
-          <!-- BÀN CHƠI GAME (Chỉ hiện khi đang trong trận) -->
+          <!-- BÀN CHƠI GAME -->
           <div id="gameBoard" class="hidden">
             <div class="game-hud">
               <div class="hud-p1">P1: <span id="scoreP1">0</span></div>
               <div class="hud-time" id="gameTimer">30</div>
               <div class="hud-p2">P2: <span id="scoreP2">0</span></div>
             </div>
+            
             <div id="gameArea">
               <canvas id="gameCanvas" width="600" height="400"></canvas>
             </div>
+
+            <!-- PHÍM ĐIỀU HƯỚNG CHO ĐIỆN THOẠI -->
+            <div class="mobile-controls" id="mobileControls">
+              <button class="dpad-btn" data-dir="UP">▲</button>
+              <div style="display:flex; gap: 40px;">
+                <button class="dpad-btn" data-dir="LEFT">◀</button>
+                <button class="dpad-btn" data-dir="RIGHT">▶</button>
+              </div>
+              <button class="dpad-btn" data-dir="DOWN">▼</button>
+            </div>
+
             <button id="leaveGameBtn" class="btn-secondary" style="margin-top: 15px;">Thoát trận</button>
           </div>
 
@@ -211,18 +222,12 @@
       <div id="admin-key7d" class="admin-content hidden"><h3>Key 7 ngày</h3><input type="text" id="keyInput7d" placeholder="Thêm key của bạn" /><button id="addKey7d" class="btn-primary">+ Thêm</button><ul id="keyList7d" class="key-list"></ul></div>
       <div id="admin-key30d" class="admin-content hidden"><h3>Key 30 ngày</h3><input type="text" id="keyInput30d" placeholder="Thêm key của bạn" /><button id="addKey30d" class="btn-primary">+ Thêm</button><ul id="keyList30d" class="key-list"></ul></div>
       
-      <!-- BẢNG DANH SÁCH TÀI KHOẢN -->
       <div id="admin-list" class="admin-content hidden">
         <h3>Danh sách tài khoản</h3>
         <div class="table-responsive">
           <table class="user-table">
             <thead>
-              <tr>
-                <th>Tài khoản</th>
-                <th>Số dư</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
+              <tr><th>Tài khoản</th><th>Số dư</th><th>Trạng thái</th><th>Hành động</th></tr>
             </thead>
             <tbody id="userTableBody"></tbody>
           </table>
