@@ -50,7 +50,7 @@ function loadUserTable() {
     
     for (const uname in users) {
       const u = users[uname];
-      if (u.role === 'OWNER') continue; // Không hiện Owner
+      if (u.role === 'OWNER') continue;
       
       const isBanned = u.banUntil && u.banUntil > Date.now();
       const statusHtml = isBanned 
@@ -64,7 +64,7 @@ function loadUserTable() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${uname}</strong> <br><small style="color:#888">${u.role}</small></td>
-        <td style="color: #00e5ff; font-weight: bold;">${formatMoney(u.balance || 0)}đ</td>
+        <td style="color: #00e5ff; font-weight: bold;">${formatMoney(u.balance || 0)}đ <br><small style="color:#ffd700">${u.coins || 0} xu</small></td>
         <td>${statusHtml}</td>
         <td>${actionBtn}</td>
       `;
@@ -98,7 +98,6 @@ function bindBanLogic() {
 
   btnCancel.onclick = () => modal.classList.add('hidden');
 
-  // Bấm nút thời gian có sẵn
   document.querySelectorAll('.ban-preset').forEach(btn => {
     btn.onclick = () => {
       timeInputs.forEach(id => document.getElementById(id).value = '');
@@ -114,16 +113,12 @@ function bindBanLogic() {
     };
   });
 
-  // Xử lý khi chọn lý do có sẵn
   selectReason.onchange = () => {
     if (selectReason.value !== 'custom') {
       inputReason.value = selectReason.value;
-      // Nếu là lý do bất thường (index 1), không khóa time (để logic tự tính)
       if (selectReason.selectedIndex === 1) {
-        // Để trống time, JS bên dưới sẽ tự động tính
         timeInputs.forEach(id => document.getElementById(id).value = '');
       } else {
-        // Các lý do khác tự động khóa 3 năm
         timeInputs.forEach(id => document.getElementById(id).value = '');
         document.getElementById('banYears').value = 3;
       }
@@ -143,21 +138,18 @@ function bindBanLogic() {
 
     let banDurationMs = 0;
     
-    // Nếu chọn lý do bất thường (index 1)
     if (selectReason.selectedIndex === 1) {
-      let strike = u.banCount || 0; // Lấy số lần vi phạm trước đó
-      strike++; // Tăng lên 1
-      
-      if (strike === 1) banDurationMs = 1 * 24 * 60 * 60 * 1000; // 1 ngày
-      else if (strike === 2) banDurationMs = 3 * 24 * 60 * 60 * 1000; // 3 ngày
-      else if (strike === 3) banDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+      let strike = u.banCount || 0;
+      strike++;
+      if (strike === 1) banDurationMs = 1 * 24 * 60 * 60 * 1000;
+      else if (strike === 2) banDurationMs = 3 * 24 * 60 * 60 * 1000;
+      else if (strike === 3) banDurationMs = 7 * 24 * 60 * 60 * 1000;
       else {
-        banDurationMs = 3 * 365 * 24 * 60 * 60 * 1000; // 3 năm
-        strike = 0; // Reset lại chu kỳ sau khi hết 3 năm
+        banDurationMs = 3 * 365 * 24 * 60 * 60 * 1000;
+        strike = 0;
       }
       await userRef.update({ banCount: strike });
     } else {
-      // Các lý do khác tính theo thời gian nhập vào
       const y = parseInt(document.getElementById('banYears').value) || 0;
       const d = parseInt(document.getElementById('banDays').value) || 0;
       const h = parseInt(document.getElementById('banHours').value) || 0;
@@ -170,7 +162,6 @@ function bindBanLogic() {
       now.setHours(now.getHours() + h);
       now.setMinutes(now.getMinutes() + m);
       now.setSeconds(now.getSeconds() + s);
-      
       banDurationMs = now.getTime() - Date.now();
     }
 
@@ -179,7 +170,6 @@ function bindBanLogic() {
     const banUntil = Date.now() + banDurationMs;
     await userRef.update({ banUntil, banReason: reason });
     await writeLog(CURRENT_USER.username, 'BAN_ACCOUNT', `Cấm ${uname} đến ${new Date(banUntil).toLocaleString('vi-VN')} - Lý do: ${reason}`);
-
     modal.classList.add('hidden');
     loadUserTable();
   };
@@ -206,7 +196,7 @@ function bindCreateAccount() {
     if (checkSnap.exists()) return flash(msg, 'Tên đăng nhập đã tồn tại');
 
     const privateKey = generatePrivateKey(type);
-    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
+    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, coins: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
     await writeLog(CURRENT_USER.username, 'CREATE_ACCOUNT', `Tạo tài khoản ${type}: ${username}`);
 
     document.getElementById('resType').textContent = type;
@@ -326,6 +316,7 @@ function loadLogs() {
       let colorStyle = '';
       if (log.action === 'BUY_BYPASS') colorStyle = 'color: #ff3b5c; font-weight: bold; border: 1px solid rgba(255, 59, 92, 0.3); background: rgba(255, 59, 92, 0.1); border-radius: 8px; padding: 0 6px;';
       if (log.action === 'BAN_ACCOUNT') colorStyle = 'color: #ff3b5c; font-weight: bold;';
+      if (log.action === 'PLAY_GAME') colorStyle = 'color: #ffd700;';
       li.innerHTML = `<span style="${colorStyle}">[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
       ul.appendChild(li);
     });
