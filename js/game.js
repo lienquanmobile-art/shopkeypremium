@@ -253,8 +253,6 @@ function showGameSetup() {
   document.getElementById('gameBoard').classList.add('hidden');
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('scoreP2').parentElement.style.display = 'block'; 
-  
-  // Xóa dòng chữ "Đang tìm trận..." khi quay lại Menu
   document.getElementById('matchStatus').textContent = ''; 
 }
 
@@ -278,12 +276,20 @@ function joinMatch(id, asPlayer1) {
     const data = snap.val();
     if (!data) return;
 
+    // XỬ LÝ KẾT QUẢ: AI ĐÂM VÀO AI THÌ NGƯỜI ĐÓ THUA
     if (data.status === 'ended') {
-      const iWin = (isPlayer1 && data.p2_dead) || (!isPlayer1 && data.p1_dead);
-      let finalWin = iWin;
-      if (data.p1_dead && data.p2_dead) {
-        finalWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
-      } else if (!data.p1_dead && !data.p2_dead && data.timeLeft <= 0) {
+      let finalWin = false;
+      
+      // Nếu P1 chết (do đâm tường, tự cắn, hoặc đâm P2) -> P2 thắng
+      if (data.p1_dead && !data.p2_dead) {
+        finalWin = !isPlayer1; 
+      } 
+      // Nếu P2 chết (do đâm tường, tự cắn, hoặc đâm P1) -> P1 thắng
+      else if (!data.p1_dead && data.p2_dead) {
+        finalWin = isPlayer1;
+      } 
+      // Nếu cả 2 cùng chết (đâm trực diện vào nhau) hoặc hết giờ
+      else {
         finalWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
       }
       
@@ -342,19 +348,21 @@ function startServerLoop() {
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
+    // CHECK VA CHẠM P1
     if (state.p1_started) {
-      if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
-      if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
-      if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
+      if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true; // Đâm tường
+      if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true; // Tự cắn mình
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; } // Đâm trực diện
+      if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true; // Đâm vào thân địch
       if (p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
     }
 
+    // CHECK VA CHẠM P2
     if (state.p2_started) {
-      if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
-      if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
-      if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+      if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true; // Đâm tường
+      if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true; // Tự cắn mình
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; } // Đâm trực diện
+      if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true; // Đâm vào thân địch
       if (p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
     }
 
