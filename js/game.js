@@ -1,6 +1,7 @@
 // game.js
 let gameInterval = null;
 let isGameRunning = false;
+let isLocalGame = false;
 let matchId = null;
 let isPlayer1 = false;
 let gameUnlocked = false;
@@ -21,47 +22,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Chặn cuộn trang khi dùng phím mũi tên
+  // Bắt sự kiện bàn phím
   window.addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      e.preventDefault(); 
+      e.preventDefault(); // Chặn cuộn trang
     }
+    if (!isGameRunning) return;
     
-    if (!isGameRunning || !matchId) return; 
     let newDir = null;
     if (e.key === 'ArrowUp') newDir = 'UP';
     if (e.key === 'ArrowDown') newDir = 'DOWN';
     if (e.key === 'ArrowLeft') newDir = 'LEFT';
     if (e.key === 'ArrowRight') newDir = 'RIGHT';
     
-    if (newDir) {
-      const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
-      const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
-      
-      const updates = {};
-      updates[myKey] = newDir;
-      updates[startKey] = true; // Báo hiệu đã bắt đầu di chuyển
-      
-      db.ref(`matches/${matchId}`).update(updates);
-    }
+    if (newDir) processInput(newDir);
   });
 
-  // Phím ảo trên điện thoại cho PvP
+  // Bắt sự kiện phím ảo
   document.querySelectorAll('.dpad-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!isGameRunning || !matchId) return;
-      const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
-      const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
-      
-      const updates = {};
-      updates[myKey] = btn.dataset.dir;
-      updates[startKey] = true;
-      
-      db.ref(`matches/${matchId}`).update(updates);
+      if (!isGameRunning) return;
+      processInput(btn.dataset.dir);
     });
   });
 
-  // Mở khóa Game
+  // Xử lý Input (Dùng chung cho cả 1P và 2P)
+  function processInput(dir) {
+    if (isLocalGame) {
+      window.localDir = dir;
+    } else if (matchId) {
+      const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
+      const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
+      const updates = {};
+      updates[myKey] = dir;
+      updates[startKey] = true; // Đánh dấu đã bắt đầu di chuyển
+      db.ref(`matches/${matchId}`).update(updates);
+    }
+  }
+
+  // Click mở khóa Game
   document.getElementById('snakeCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     if (gameUnlocked) {
@@ -86,18 +85,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameMenu').classList.remove('hidden');
   });
 
-  // Nút thoát trận
+  // Thoát trận
   document.getElementById('leaveGameBtn')?.addEventListener('click', async () => {
     if (confirm('Bạn có chắc muốn thoát trận?')) {
       isGameRunning = false;
+      isLocalGame = false;
       clearInterval(gameInterval);
-      
       if (matchId) {
         await db.ref(`matches/${matchId}`).remove();
         if (matchListener) db.ref('matches').off('child_added', matchListener);
+        matchId = null;
       }
-      matchId = null;
-      
       document.getElementById('gameBoard').classList.add('hidden');
       document.getElementById('gameBoard').style.display = 'none';
       document.getElementById('gameMenu').classList.remove('hidden');
@@ -107,8 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- CHẾ ĐỘ 1 PLAYER ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
+    isLocalGame = true;
+    isGameRunning = true;
     matchId = null;
-    isPlayer1 = true;
+    
     document.getElementById('gameSetupArea').classList.add('hidden');
     document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
@@ -116,26 +116,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameArea').style.display = 'block';
     document.querySelector('.game-hud').style.display = 'flex';
     document.getElementById('gameTimer').textContent = '∞'; 
-    
+    document.getElementById('scoreP1').textContent = '0';
+
+    // Rắn khởi đầu 3 block cho 1P
     let localSnake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
     let localApple = { x: 15, y: 10 };
     let localScore = 0;
-    let localDir = 'RIGHT';
-    let localRunning = true;
-    
-    isGameRunning = true;
-    document.getElementById('scoreP1').textContent = '0';
+    window.localDir = 'RIGHT'; // Biến toàn cục để hứng input
 
     const localMove = () => {
-      if (!localRunning) return;
-      let head = { ...localSnake[0] };
-      if (localDir === 'UP') head.y--;
-      if (localDir === 'DOWN') head.y++;
-      if (localDir === 'LEFT') head.x--;
-      if (localDir === 'RIGHT') head.x++;
+      if (!isGameRunning || !isLocalGame) return;
 
+      let head = { ...localSnake[0] };
+      if (window.localDir === 'UP') head.y--;
+      if (window.localDir === 'DOWN') head.y++;
+      if (window.localDir === 'LEFT') head.x--;
+      if (window.localDir === 'RIGHT') head.x++;
+
+      // Va chạm
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || localSnake.some(s => s.x === head.x && s.y === head.y)) {
-        localRunning = false;
         isGameRunning = false;
         return endLocalGame(localScore);
       }
@@ -156,28 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
       drawLocalCanvas(localSnake, localApple);
       setTimeout(localMove, TICK_RATE);
     };
-
-    window.mobile1PHandler = (dir) => {
-      if (dir === 'UP' && localDir !== 'DOWN') localDir = 'UP';
-      if (dir === 'DOWN' && localDir !== 'UP') localDir = 'DOWN';
-      if (dir === 'LEFT' && localDir !== 'RIGHT') localDir = 'LEFT';
-      if (dir === 'RIGHT' && localDir !== 'LEFT') localDir = 'RIGHT';
-    };
-    window.localKeyHandler = (e) => {
-      if (!localRunning) return;
-      let newDir = null;
-      if (e.key === 'ArrowUp') newDir = 'UP';
-      if (e.key === 'ArrowDown') newDir = 'DOWN';
-      if (e.key === 'ArrowLeft') newDir = 'LEFT';
-      if (e.key === 'ArrowRight') newDir = 'RIGHT';
-      if (newDir) window.mobile1PHandler(newDir);
-    };
-    window.addEventListener('keydown', window.localKeyHandler);
-
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- CHẾ ĐỘ 2 PLAYER (PVP KHÔNG CẦN READY) ---
+  // --- CHẾ ĐỘ 2 PLAYER (PVP) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -190,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
-    // Dọn dẹp hàng đợi cũ
     await myRef.remove(); 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
@@ -200,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = true; 
       
-      // Khởi tạo trận đấu với rắn 1 block, đứng im (started: false)
+      // KHỞI TẠO RẮN 1 BLOCK ĐỨNG IM
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
         p1_name: waitingPlayer,
@@ -208,8 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
         p1_started: false,
         p2_started: false,
         p1_score: 0, p2_score: 0,
-        p1_snake: [{x: 5, y: 10}], // Rắn 1 block
-        p2_snake: [{x: 24, y: 10}], // Rắn 1 block
+        p1_snake: [{x: 5, y: 10}], 
+        p2_snake: [{x: 24, y: 10}], 
         p1_dir: 'RIGHT', p2_dir: 'LEFT',
         apple: { x: 15, y: 10 },
         timeLeft: GAME_TIME,
@@ -240,24 +220,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-async function loadGameData() {
+function loadGameData() {
   if (!CURRENT_USER) return;
-  const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
-  const u = snap.val();
-  document.getElementById('userCoins').textContent = u.coins || 0;
-  
-  const snakeCard = document.getElementById('snakeCard');
-  if (u.gameUnlocked) {
-    gameUnlocked = true;
-    snakeCard.classList.remove('locked');
-    snakeCard.querySelector('.unlock-text').textContent = "Đã mua - Click để chơi";
-    snakeCard.querySelector('.unlock-text').style.color = "#00ff88";
-  } else {
-    gameUnlocked = false;
-    snakeCard.classList.add('locked');
-    snakeCard.querySelector('.unlock-text').textContent = "Mở khóa: 1.000đ";
-    snakeCard.querySelector('.unlock-text').style.color = "#00e5ff";
-  }
+  db.ref(`users/${CURRENT_USER.username}`).once('value').then(snap => {
+    const u = snap.val();
+    document.getElementById('userCoins').textContent = u.coins || 0;
+    const snakeCard = document.getElementById('snakeCard');
+    if (u.gameUnlocked) {
+      gameUnlocked = true;
+      snakeCard.classList.remove('locked');
+      snakeCard.querySelector('.unlock-text').textContent = "Đã mua - Click để chơi";
+      snakeCard.querySelector('.unlock-text').style.color = "#00ff88";
+    } else {
+      gameUnlocked = false;
+      snakeCard.classList.add('locked');
+      snakeCard.querySelector('.unlock-text').textContent = "Mở khóa: 1.000đ";
+      snakeCard.querySelector('.unlock-text').style.color = "#00e5ff";
+    }
+  });
 }
 
 function showGameSetup() {
@@ -271,8 +251,9 @@ function showGameSetup() {
 function joinMatch(id, asPlayer1) {
   matchId = id;
   isPlayer1 = asPlayer1;
+  isLocalGame = false;
+  isGameRunning = true;
   
-  // Vào trận luôn, không cần Sẵn sàng
   document.getElementById('gameSetupArea').classList.add('hidden');
   document.getElementById('gameBoard').classList.remove('hidden');
   document.getElementById('gameBoard').style.display = 'block';
@@ -282,7 +263,7 @@ function joinMatch(id, asPlayer1) {
   const matchRef = db.ref(`matches/${matchId}`);
   matchRef.on('value', snap => {
     const data = snap.val();
-    if (!data) return;
+    if (!data || data.status === 'ended') return;
 
     document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
     document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
@@ -290,10 +271,9 @@ function joinMatch(id, asPlayer1) {
     
     drawCanvas(data);
 
-    // Nếu có 1 người bấm nút (started == true) -> Bắt đầu chạy Server Ảo (nếu là P1)
-    if ((data.p1_started || data.p2_started) && isPlayer1 && !isGameRunning) {
-      isGameRunning = true;
-      startServerLoop(); 
+    // Nếu P1 và có người bấm nút -> Bắt đầu Server Ảo
+    if (isPlayer1 && (data.p1_started || data.p2_started) && !gameInterval) {
+      startServerLoop();
     }
 
     if (data.status === 'ended') {
@@ -305,6 +285,7 @@ function joinMatch(id, asPlayer1) {
 
 function startServerLoop() {
   gameInterval = setInterval(async () => {
+    if (!matchId) return;
     const snap = await db.ref(`matches/${matchId}`).once('value');
     const state = snap.val();
     if (!state || state.status !== 'playing') return;
@@ -319,7 +300,6 @@ function startServerLoop() {
     const now = Date.now();
     const dt = now - state.lastTick;
     
-    // Đếm ngược thời gian (Chỉ đếm khi đã có người bấm nút)
     if (dt >= 1000 && (state.p1_started || state.p2_started)) {
       timeLeft -= Math.floor(dt / 1000);
     }
@@ -327,7 +307,6 @@ function startServerLoop() {
     let p1_head = { ...p1_snake[0] };
     let p2_head = { ...p2_snake[0] };
 
-    // Chỉ di chuyển nếu người đó đã bấm nút (started == true)
     if (state.p1_started) {
       if (state.p1_dir === 'UP') p1_head.y--;
       if (state.p1_dir === 'DOWN') p1_head.y++;
@@ -344,7 +323,6 @@ function startServerLoop() {
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
-    // Chỉ check va chạm nếu người đó đang di chuyển
     if (state.p1_started) {
       if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
       if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
@@ -366,7 +344,6 @@ function startServerLoop() {
       return;
     }
 
-    // Cập nhật thân rắn
     if (state.p1_started && !p1_dead) { p1_snake.unshift(p1_head); if (!p1_ate) p1_snake.pop(); }
     if (state.p2_started && !p2_dead) { p2_snake.unshift(p2_head); if (!p2_ate) p2_snake.pop(); }
 
@@ -396,14 +373,17 @@ function drawCanvas(state) {
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   for(let i=0; i<canvas.width; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
   for(let i=0; i<canvas.height; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+  
   if (state.apple) {
     ctx.fillStyle = '#ff3b5c'; ctx.beginPath();
     ctx.arc((state.apple.x * TILE_SIZE) + TILE_SIZE/2, (state.apple.y * TILE_SIZE) + TILE_SIZE/2, TILE_SIZE/2 - 2, 0, Math.PI * 2);
     ctx.fill();
   }
+  
   const enemySnake = isPlayer1 ? state.p2_snake : state.p1_snake;
   ctx.fillStyle = isPlayer1 ? '#00ff88' : '#ffd700';
   enemySnake.forEach(seg => { ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE-2, TILE_SIZE-2); });
+  
   const mySnake = isPlayer1 ? state.p1_snake : state.p2_snake;
   ctx.fillStyle = isPlayer1 ? '#ffd700' : '#00ff88';
   mySnake.forEach(seg => { ctx.fillRect(seg.x * TILE_SIZE, seg.y * TILE_SIZE, TILE_SIZE-2, TILE_SIZE-2); });
@@ -426,6 +406,7 @@ function drawLocalCanvas(snake, apple) {
 }
 
 async function endLocalGame(score) {
+  isLocalGame = false;
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('gameMenu').classList.remove('hidden');
   document.getElementById('scoreP1').textContent = '0';
@@ -452,6 +433,8 @@ async function endGame(isWin, data) {
   if (!isGameRunning) return;
   isGameRunning = false;
   clearInterval(gameInterval);
+  gameInterval = null;
+
   if (matchId) {
     db.ref(`matches/${matchId}`).remove();
     matchId = null;
