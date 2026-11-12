@@ -277,6 +277,16 @@ body {
 }
 .modal-key-box code { font-size: 20px; color: #fff; font-weight: bold; }
 
+/* CSS FORM BAN */
+#banModal label {
+  display: block; font-size: 13px; font-weight: 600; margin: 12px 0 6px; color: #a0aec0;
+}
+#banModal input, #banModal select {
+  width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; outline: none; margin-bottom: 8px;
+}
+#banModal input:focus, #banModal select:focus { border-color: #ff3b5c; }
+
 @media (max-width: 900px) {
   .buy-layout { flex-direction: column; }
   .buy-right { width: 100%; }
