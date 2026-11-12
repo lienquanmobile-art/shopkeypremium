@@ -140,13 +140,17 @@ function bindHomeUI() {
       const page = btn.dataset.page;
       document.getElementById('page-home').classList.toggle('hidden', page !== 'home');
       document.getElementById('page-admin').classList.toggle('hidden', page !== 'admin');
+      
+      if (page === 'admin' && window.refreshAdminData) {
+        window.refreshAdminData();
+      }
     });
   });
 
-  // Chọn gói
-  document.querySelectorAll('.package-card').forEach(card => {
+  // Chọn gói Key Thường
+  document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
-      document.querySelectorAll('.package-card').forEach(c => c.classList.remove('selected'));
+      document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       SELECTED_PACKAGE = card.dataset.package;
       const pkg = PACKAGES[SELECTED_PACKAGE];
@@ -157,8 +161,9 @@ function bindHomeUI() {
   });
 
   document.getElementById('buyNowBtn').addEventListener('click', handleBuy);
+  document.getElementById('buyBypassBtn').addEventListener('click', handleBuyBypass);
 
-  // Sự kiện cho Modal
+  // Sự kiện cho Modal Key
   document.getElementById('modalCloseBtn').addEventListener('click', () => {
     document.getElementById('successModal').classList.add('hidden');
   });
@@ -167,6 +172,25 @@ function bindHomeUI() {
     const key = document.getElementById('modalKeyValue').textContent;
     navigator.clipboard.writeText(key);
     const btn = document.getElementById('modalCopyBtn');
+    btn.textContent = 'Đã chép!';
+    btn.style.background = '#00e5ff';
+    btn.style.color = '#000';
+    setTimeout(() => { 
+      btn.textContent = 'Sao chép'; 
+      btn.style.background = ''; 
+      btn.style.color = '';
+    }, 2000);
+  });
+
+  // Sự kiện cho Modal Vượt Link
+  document.getElementById('modalBypassCloseBtn').addEventListener('click', () => {
+    document.getElementById('bypassModal').classList.add('hidden');
+  });
+  
+  document.getElementById('modalBypassCopyBtn').addEventListener('click', () => {
+    const link = document.getElementById('modalBypassValue').textContent;
+    navigator.clipboard.writeText(link);
+    const btn = document.getElementById('modalBypassCopyBtn');
     btn.textContent = 'Đã chép!';
     btn.style.background = '#00e5ff';
     btn.style.color = '#000';
@@ -230,12 +254,43 @@ async function handleBuy() {
   
   msg.textContent = ''; 
 
-  // Hiển thị Modal thay vì thông báo chữ nhỏ
   document.getElementById('modalKeyValue').textContent = chosenKey;
   document.getElementById('successModal').classList.remove('hidden');
 }
 
-// HÀM LOAD LỊCH SỬ MUA HÀNG
+async function handleBuyBypass() {
+  const msg = document.getElementById('bypassMsg');
+  if (!CURRENT_USER) return flash(msg, 'Bạn cần đăng nhập');
+
+  const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
+  const userData = userSnap.val();
+  const balance = userData.balance || 0;
+  
+  const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+  const cost = isFree ? 0 : 500;
+
+  if (balance < cost) {
+    return flash(msg, `Số dư không đủ (cần ${formatMoney(cost)}đ, hiện có ${formatMoney(balance)}đ)`);
+  }
+
+  const updates = {};
+  if (!isFree) {
+    updates[`users/${CURRENT_USER.username}/balance`] = balance - cost;
+  }
+  
+  await db.ref().update(updates);
+
+  const logMsg = isFree 
+    ? `Lấy link FREE (Vượt Link)` 
+    : `Mua Vượt Link (500đ)`;
+  await writeLog(CURRENT_USER.username, 'BUY_BYPASS', logMsg);
+  
+  msg.textContent = ''; 
+
+  document.getElementById('modalBypassValue').textContent = 'https://pre.hnmod.top/s/get-adr-v3';
+  document.getElementById('bypassModal').classList.remove('hidden');
+}
+
 async function loadHistory() {
   const list = document.getElementById('historyList');
   list.innerHTML = '<li class="empty-history">Đang tải dữ liệu...</li>';
@@ -245,7 +300,7 @@ async function loadHistory() {
   const snap = await db.ref(`purchases/${CURRENT_USER.username}`).once('value');
   const data = snap.val() || {};
   
-  const arr = Object.entries(data).reverse(); // Đảo ngược để cái mới nhất lên đầu
+  const arr = Object.entries(data).reverse(); 
   
   if (arr.length === 0) {
     list.innerHTML = '<li class="empty-history">Bạn chưa mua key nào.</li>';
