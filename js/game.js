@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Xử lý Input (Dùng chung cho cả 1P và 2P)
   function processInput(dir) {
     if (isLocalGame) {
       window.localDir = dir;
@@ -55,12 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
       const updates = {};
       updates[myKey] = dir;
-      updates[startKey] = true; // Đánh dấu đã bắt đầu di chuyển
+      updates[startKey] = true; 
       db.ref(`matches/${matchId}`).update(updates);
     }
   }
 
-  // Click mở khóa Game
   document.getElementById('snakeCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     if (gameUnlocked) {
@@ -85,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameMenu').classList.remove('hidden');
   });
 
-  // Thoát trận
   document.getElementById('leaveGameBtn')?.addEventListener('click', async () => {
     if (confirm('Bạn có chắc muốn thoát trận?')) {
       isGameRunning = false;
@@ -103,7 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- CHẾ ĐỘ 1 PLAYER ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
     isLocalGame = true;
     isGameRunning = true;
@@ -118,11 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameTimer').textContent = '∞'; 
     document.getElementById('scoreP1').textContent = '0';
 
-    // Rắn khởi đầu 3 block cho 1P
     let localSnake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
     let localApple = { x: 15, y: 10 };
     let localScore = 0;
-    window.localDir = 'RIGHT'; // Biến toàn cục để hứng input
+    window.localDir = 'RIGHT';
 
     const localMove = () => {
       if (!isGameRunning || !isLocalGame) return;
@@ -133,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.localDir === 'LEFT') head.x--;
       if (window.localDir === 'RIGHT') head.x++;
 
-      // Va chạm
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || localSnake.some(s => s.x === head.x && s.y === head.y)) {
         isGameRunning = false;
         return endLocalGame(localScore);
@@ -158,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- CHẾ ĐỘ 2 PLAYER (PVP) ---
+  // --- CHẾ ĐỘ 2 PLAYER (GHÉP TRẬN) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -166,24 +160,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
+    // 1. DỌN DẸP HÀNG ĐỢI CŨ CỦA BẢN THÂN
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
-
     await myRef.remove(); 
+
+    // 2. LẤY DANH SÁCH HÀNG ĐỢI VÀ KIỂM TRA XEM CÓ AI ONLINE KHÔNG
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
-    const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
+    
+    // Chỉ lấy những người đang chờ VÀ thời gian tạo < 15 giây (tránh rác cũ)
+    const now = Date.now();
+    const validPlayers = Object.keys(queue).filter(k => {
+      return k !== CURRENT_USER.username && (now - queue[k].timestamp) < 15000;
+    });
 
-    if (waitingPlayer) {
+    if (validPlayers.length > 0) {
+      // Có người chờ thực sự -> Tạo trận
+      const opponent = validPlayers[0];
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = true; 
       
-      // KHỞI TẠO RẮN 1 BLOCK ĐỨNG IM
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
-        p1_name: waitingPlayer,
+        p1_name: opponent,
         p2_name: CURRENT_USER.username,
         p1_started: false,
         p2_started: false,
@@ -199,7 +201,8 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, true);
     } else {
-      await myRef.set({ timestamp: Date.now() });
+      // Không có ai -> Vào hàng đợi
+      await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
         if (!matchId) {
@@ -253,6 +256,7 @@ function joinMatch(id, asPlayer1) {
   isPlayer1 = asPlayer1;
   isLocalGame = false;
   isGameRunning = true;
+  gameInterval = null;
   
   document.getElementById('gameSetupArea').classList.add('hidden');
   document.getElementById('gameBoard').classList.remove('hidden');
@@ -271,7 +275,6 @@ function joinMatch(id, asPlayer1) {
     
     drawCanvas(data);
 
-    // Nếu P1 và có người bấm nút -> Bắt đầu Server Ảo
     if (isPlayer1 && (data.p1_started || data.p2_started) && !gameInterval) {
       startServerLoop();
     }
