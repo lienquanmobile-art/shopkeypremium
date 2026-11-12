@@ -13,7 +13,7 @@ let localTimer = null;
 const TILE_SIZE = 20;
 const COLS = 30;
 const ROWS = 20;
-const TICK_RATE = 250; // TỐC ĐỘ RẮN (Chậm rãi, dễ chơi)
+const TICK_RATE = 250; 
 const GAME_TIME = 30;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,9 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện phím (Gửi lên Firebase cho PvP)
+  // Bắt sự kiện phím VÀ CHẶN CUỘN TRANG
   window.addEventListener('keydown', (e) => {
-    if (!isGameRunning || !matchId) return;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.preventDefault(); 
+    }
+    
+    if (!isGameRunning) return;
     let newDir = null;
     if (e.key === 'ArrowUp') newDir = 'UP';
     if (e.key === 'ArrowDown') newDir = 'DOWN';
@@ -35,12 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'ArrowRight') newDir = 'RIGHT';
     
     if (newDir) {
-      const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
-      db.ref(`matches/${matchId}/${myKey}`).set(newDir);
+      handleInput(newDir);
     }
   });
 
-  // Click vào thẻ Game Rắn
+  // Bắt sự kiện phím ảo trên điện thoại
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!isGameRunning) return;
+      handleInput(btn.dataset.dir);
+    });
+  });
+
   document.getElementById('snakeCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     if (gameUnlocked) {
@@ -60,13 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Quay lại menu
   document.getElementById('backToMenuBtn')?.addEventListener('click', () => {
     document.getElementById('gameSetupArea').classList.add('hidden');
     document.getElementById('gameMenu').classList.remove('hidden');
   });
 
-  // Lưu tên rắn
   document.getElementById('saveNameBtn')?.addEventListener('click', () => {
     const name = document.getElementById('snakeNameInput').value.trim();
     if (!name) return alert('Vui lòng nhập tên!');
@@ -74,14 +82,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('savedNameMsg').textContent = `Đã lưu tên: ${name}`;
   });
 
-  // --- CHẾ ĐỘ 1 PLAYER (OFFLINE) ---
+  // Nút Thoát Trận
+  document.getElementById('leaveGameBtn')?.addEventListener('click', () => {
+    if (confirm('Bạn có chắc muốn thoát trận? Trận đấu sẽ bị hủy.')) {
+      if (matchId) {
+        db.ref(`matches/${matchId}`).remove();
+        matchId = null;
+      }
+      clearInterval(gameInterval);
+      clearInterval(localTimer);
+      isGameRunning = false;
+      document.getElementById('gameBoard').style.display = 'none';
+      document.getElementById('gameMenu').classList.remove('hidden');
+    }
+  });
+
+  // --- CHẾ ĐỘ 1 PLAYER ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
     matchId = null;
     isPlayer1 = true;
     document.getElementById('gameSetupArea').classList.add('hidden');
     document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
-    document.getElementById('scoreP2').parentElement.style.display = 'none'; // Ẩn P2
+    document.getElementById('scoreP2').parentElement.style.display = 'none'; 
     document.getElementById('gameArea').style.display = 'block';
     document.querySelector('.game-hud').style.display = 'flex';
     
@@ -92,8 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let localDir = 'RIGHT';
     let localRunning = true;
     
+    myDirection = 'RIGHT';
     document.getElementById('scoreP1').textContent = '0';
     document.getElementById('gameTimer').textContent = localTime;
+    isGameRunning = true;
 
     const localMove = () => {
       if (!localRunning) return;
@@ -104,9 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (localDir === 'LEFT') head.x--;
       if (localDir === 'RIGHT') head.x++;
 
-      // Va chạm
       if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS || localSnake.some(s => s.x === head.x && s.y === head.y)) {
         localRunning = false;
+        isGameRunning = false;
         return endLocalGame(localScore);
       }
 
@@ -114,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (head.x === localApple.x && head.y === localApple.y) {
         localScore++;
         document.getElementById('scoreP1').textContent = localScore;
-        // Sinh táo mới
         let valid = false;
         while(!valid) {
           localApple = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
@@ -128,14 +152,21 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(localMove, TICK_RATE);
     };
 
-    const localKeyHandler = (e) => {
-      if (!localRunning) return;
-      if (e.key === 'ArrowUp' && localDir !== 'DOWN') localDir = 'UP';
-      if (e.key === 'ArrowDown' && localDir !== 'UP') localDir = 'DOWN';
-      if (e.key === 'ArrowLeft' && localDir !== 'RIGHT') localDir = 'LEFT';
-      if (e.key === 'ArrowRight' && localDir !== 'LEFT') localDir = 'RIGHT';
+    window.mobile1PHandler = (dir) => {
+      if (dir === 'UP' && localDir !== 'DOWN') localDir = 'UP';
+      if (dir === 'DOWN' && localDir !== 'UP') localDir = 'DOWN';
+      if (dir === 'LEFT' && localDir !== 'RIGHT') localDir = 'LEFT';
+      if (dir === 'RIGHT' && localDir !== 'LEFT') localDir = 'RIGHT';
     };
-    window.addEventListener('keydown', localKeyHandler);
+    window.localKeyHandler = (e) => {
+      let newDir = null;
+      if (e.key === 'ArrowUp') newDir = 'UP';
+      if (e.key === 'ArrowDown') newDir = 'DOWN';
+      if (e.key === 'ArrowLeft') newDir = 'LEFT';
+      if (e.key === 'ArrowRight') newDir = 'RIGHT';
+      if (newDir) window.mobile1PHandler(newDir);
+    };
+    window.addEventListener('keydown', window.localKeyHandler);
 
     setTimeout(localMove, TICK_RATE);
     localTimer = setInterval(() => {
@@ -144,14 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('gameTimer').textContent = localTime;
       if (localTime <= 0) {
         localRunning = false;
+        isGameRunning = false;
         clearInterval(localTimer);
-        window.removeEventListener('keydown', localKeyHandler);
+        window.removeEventListener('keydown', window.localKeyHandler);
         endLocalGame(localScore);
       }
     }, 1000);
   });
 
-  // --- CHẾ ĐỘ 2 PLAYER (GHÉP TRẬN) ---
+  // --- CHẾ ĐỘ 2 PLAYER (PvP) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -159,18 +191,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
-    // Dọn dẹp listener cũ để tránh lỗi "Ma trận"
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
 
+    // Dọn dẹp hàng đợi cũ
+    await queueRef.child(CURRENT_USER.username).remove(); 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (waitingPlayer) {
-      // Nếu có người đang chờ -> Tạo trận mới
       const newMatchId = 'match_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       isPlayer1 = true; 
       
@@ -192,7 +224,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, true);
     } else {
-      // Không có ai -> Vào hàng đợi
       await myRef.set({ timestamp: Date.now() });
       
       const timeout = setTimeout(async () => {
@@ -214,6 +245,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+function handleInput(dir) {
+  if (matchId) {
+    const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
+    db.ref(`matches/${matchId}/${myKey}`).set(dir);
+  } else if (window.mobile1PHandler) {
+    window.mobile1PHandler(dir);
+  }
+}
 
 async function loadGameData() {
   if (!CURRENT_USER) return;
@@ -239,7 +279,7 @@ function showGameSetup() {
   document.getElementById('gameMenu').classList.add('hidden');
   document.getElementById('gameSetupArea').classList.remove('hidden');
   document.getElementById('gameBoard').style.display = 'none';
-  document.getElementById('scoreP2').parentElement.style.display = 'block'; // Bật lại P2
+  document.getElementById('scoreP2').parentElement.style.display = 'block'; 
 }
 
 function joinMatch(id, asPlayer1) {
@@ -252,7 +292,6 @@ function joinMatch(id, asPlayer1) {
     document.getElementById('gameBoard').classList.remove('hidden');
     document.getElementById('gameBoard').style.display = 'block';
     
-    // HIỂN THỊ NÚT SẴN SÀNG
     let readyBtn = document.getElementById('readyBtn');
     if (!readyBtn) {
       readyBtn = document.createElement('button');
@@ -266,7 +305,6 @@ function joinMatch(id, asPlayer1) {
     readyBtn.disabled = false;
     readyBtn.textContent = 'SẴN SÀNG';
     
-    // Ẩn bàn chơi cho đến khi cả 2 ready
     document.getElementById('gameArea').style.display = 'none';
     document.querySelector('.game-hud').style.display = 'none';
 
@@ -287,7 +325,7 @@ function listenMatchStatus() {
     const data = snap.val();
     if (!data) return;
 
-    // Nếu cả 2 đã sẵn sàng -> Bắt đầu
+    // Tự động chuyển sang playing nếu cả 2 ready
     if (data.p1_ready && data.p2_ready && data.status === 'waiting') {
       matchRef.update({ status: 'playing' });
     }
@@ -318,8 +356,8 @@ function listenMatchStatus() {
 function startMultiplayerGame(initialData) {
   isGameRunning = true;
   gameState = initialData;
-  
-  // NẾU LÀ P1 (Chủ phòng) -> CHẠY SERVER ẢO
+  document.getElementById('gameArea').style.display = 'block';
+
   if (isPlayer1) {
     gameInterval = setInterval(async () => {
       if (!gameState || gameState.status !== 'playing') return;
@@ -402,7 +440,6 @@ function drawCanvas(state) {
   
   ctx.fillStyle = '#0d0f17';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   for(let i=0; i<canvas.width; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
   for(let i=0; i<canvas.height; i+=TILE_SIZE) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
@@ -449,7 +486,6 @@ async function endLocalGame(score) {
   document.getElementById('scoreP1').textContent = '0';
   
   let coinsEarned = score * 10;
-
   if (coinsEarned > 0) {
     const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
     const currentCoins = snap.val().coins || 0;
