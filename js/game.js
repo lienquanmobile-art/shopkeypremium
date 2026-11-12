@@ -166,14 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
-    // Xóa tên mình khỏi danh sách chờ trước khi tìm (để làm mới)
     await myRef.remove();
 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const now = Date.now();
     
-    // TÌM NGƯỜI KHÁC ĐANG CHỜ (BẮT BUỘC KHÁC TÊN VÀ THỜI GIAN < 10 GIÂY)
     let opponent = null;
     for (const key in queue) {
       if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
@@ -183,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (opponent) {
-      // ĐÃ TÌM THẤY ĐỐI THỦ -> TẠO TRẬN
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
@@ -206,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
       isSearching = false;
       joinMatch(newMatchId, false); 
     } else {
-      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI VÀ CHỜ
       await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
@@ -218,10 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 15000);
 
-      // CHỜ ĐỐI THỦ TẠO TRẬN VÀ LÔI MÌNH VÀO
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
-        // CHỈ NHẬN TRẬN NẾU CÓ TÊN MÌNH VÀ TÊN ĐỐI THỦ HỢP LỆ
         if (m && m.p1_name && m.p2_name && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
@@ -259,6 +253,9 @@ function showGameSetup() {
   document.getElementById('gameBoard').classList.add('hidden');
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('scoreP2').parentElement.style.display = 'block'; 
+  
+  // Xóa dòng chữ "Đang tìm trận..." khi quay lại Menu
+  document.getElementById('matchStatus').textContent = ''; 
 }
 
 function joinMatch(id, asPlayer1) {
