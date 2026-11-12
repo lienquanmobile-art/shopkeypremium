@@ -22,10 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện bàn phím
   window.addEventListener('keydown', (e) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      e.preventDefault(); // Chặn cuộn trang
+      e.preventDefault(); 
     }
     if (!isGameRunning) return;
     
@@ -38,9 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newDir) processInput(newDir);
   });
 
-  // Bắt sự kiện phím ảo
   document.querySelectorAll('.dpad-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault(); // Chặn hành vi mặc định (quan trọng cho mobile)
       if (!isGameRunning) return;
       processInput(btn.dataset.dir);
     });
@@ -152,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- CHẾ ĐỘ 2 PLAYER (GHÉP TRẬN) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -160,32 +158,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
-    // 1. DỌN DẸP HÀNG ĐỢI CŨ CỦA BẢN THÂN
+    // 1. DỌN RÁC CŨ: Xóa hàng đợi nếu nó cũ hơn 15s hoặc của chính mình
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
-    await myRef.remove(); 
-
-    // 2. LẤY DANH SÁCH HÀNG ĐỢI VÀ KIỂM TRA XEM CÓ AI ONLINE KHÔNG
-    const snap = await queueRef.once('value');
-    const queue = snap.val() || {};
     
-    // Chỉ lấy những người đang chờ VÀ thời gian tạo < 15 giây (tránh rác cũ)
+    const allQueues = (await queueRef.once('value')).val() || {};
     const now = Date.now();
-    const validPlayers = Object.keys(queue).filter(k => {
-      return k !== CURRENT_USER.username && (now - queue[k].timestamp) < 15000;
-    });
+    const updatesToDelete = {};
+    for (const key in allQueues) {
+      if (key === CURRENT_USER.username || (now - allQueues[key].timestamp) > 15000) {
+        updatesToDelete[key] = null;
+      }
+    }
+    if (Object.keys(updatesToDelete).length > 0) {
+      await queueRef.update(updatesToDelete);
+    }
 
-    if (validPlayers.length > 0) {
-      // Có người chờ thực sự -> Tạo trận
-      const opponent = validPlayers[0];
+    // 2. ĐỌC LẠI HÀNG ĐỢI SAU KHI DỌN
+    const cleanQueues = (await queueRef.once('value')).val() || {};
+    const waitingPlayer = Object.keys(cleanQueues).find(k => k !== CURRENT_USER.username);
+
+    if (waitingPlayer) {
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = true; 
       
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
-        p1_name: opponent,
+        p1_name: waitingPlayer,
         p2_name: CURRENT_USER.username,
         p1_started: false,
         p2_started: false,
@@ -201,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, true);
     } else {
-      // Không có ai -> Vào hàng đợi
       await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
