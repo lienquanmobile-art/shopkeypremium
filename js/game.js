@@ -6,7 +6,7 @@ let matchId = null;
 let isPlayer1 = false;
 let gameUnlocked = false;
 let matchListener = null;
-let searchTimeout = null;
+let isSearching = false;
 
 const TILE_SIZE = 20;
 const COLS = 30;
@@ -87,8 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Bạn có chắc muốn thoát trận?')) {
       isGameRunning = false;
       isLocalGame = false;
+      isSearching = false;
       clearInterval(gameInterval);
-      clearTimeout(searchTimeout);
       if (matchId) {
         await db.ref(`matches/${matchId}`).remove();
         if (matchListener) db.ref('matches').off('child_added', matchListener);
@@ -151,8 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- GHÉP TRẬN PVP (HÀNG ĐỢI THỰC SỰ) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
+    if (isSearching) return; 
+    isSearching = true;
+
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
     
@@ -163,20 +165,22 @@ document.addEventListener('DOMContentLoaded', () => {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
-    clearTimeout(searchTimeout);
 
-    // Xóa hàng đợi cũ của mình nếu có
     await myRef.remove();
 
-    // Quét xem có ai đang đợi không
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
+    const now = Date.now();
     
-    // Lấy người đầu tiên trong hàng đợi (KHÔNG PHÂN BIỆT THỜI GIAN, MIỄN LÀ KHÁC MÌNH)
-    const opponent = Object.keys(queue).find(k => k !== CURRENT_USER.username);
+    let opponent = null;
+    for (const key in queue) {
+      if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
+        opponent = key;
+        break;
+      }
+    }
 
     if (opponent) {
-      // TÌM THẤY -> TẠO TRẬN LUÔN (Mình là P2)
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
@@ -196,15 +200,16 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       await myRef.remove();
+      isSearching = false;
       joinMatch(newMatchId, false); 
     } else {
-      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI CHỜ
-      await myRef.set({ timestamp: Date.now() });
+      await myRef.set({ timestamp: now });
       
-      searchTimeout = setTimeout(async () => {
+      const timeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
           statusTxt.textContent = 'Không có trận đấu nào!';
+          isSearching = false;
           if (matchListener) db.ref('matches').off('child_added', matchListener);
         }
       }, 15000);
@@ -212,8 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
         if (m && m.p1_name && m.p2_name && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
-          clearTimeout(searchTimeout);
+          clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
+          isSearching = false;
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
         }
       });
@@ -247,6 +253,8 @@ function showGameSetup() {
   document.getElementById('gameBoard').classList.add('hidden');
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('scoreP2').parentElement.style.display = 'block'; 
+  
+  // Xóa chữ "Đang tìm trận..." cũ
   document.getElementById('matchStatus').textContent = ''; 
 }
 
@@ -271,17 +279,19 @@ function joinMatch(id, asPlayer1) {
     if (!data) return;
 
     if (data.status === 'ended') {
-      let finalWin = false;
+      // SỬA LẠI LOGIC XÉT THẮNG THUA
+      let iWin = false;
       
       if (data.p1_dead && !data.p2_dead) {
-        finalWin = !isPlayer1; 
-      } else if (!data.p1_dead && data.p2_dead) {
-        finalWin = isPlayer1;
+        iWin = !isPlayer1; // P1 chết, mình thắng nếu mình là P2
+      } else if (data.p2_dead && !data.p1_dead) {
+        iWin = isPlayer1;  // P2 chết, mình thắng nếu mình là P1
       } else {
-        finalWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
+        // Cả 2 cùng chết hoặc hết giờ -> Xét điểm
+        iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
       }
       
-      endGame(finalWin, data);
+      endGame(iWin, data);
       return;
     }
 
@@ -353,12 +363,13 @@ function startServerLoop() {
     }
 
     if (p1_dead || p2_dead || timeLeft <= 0) {
+      // Cập nhật chính xác ai chết
       await db.ref(`matches/${matchId}`).update({ 
         status: 'ended', 
         p1_score, 
         p2_score, 
-        p1_dead, 
-        p2_dead 
+        p1_dead: p1_dead, 
+        p2_dead: p2_dead 
       });
       return;
     }
