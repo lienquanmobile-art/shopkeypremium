@@ -151,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- GHÉP TRẬN PVP (FIX TRẬN ẢO TRÊN PC) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     if (isSearching) return; 
     isSearching = true;
@@ -167,27 +166,30 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
-    // Lấy hàng đợi và tìm đối thủ
+    // Xóa tên mình khỏi danh sách chờ trước khi tìm (để làm mới)
+    await myRef.remove();
+
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
     const now = Date.now();
     
-    // CHỈ TÌM NHỮNG NGƯỜI VỪA MỚI BẤM < 10 GIÂY (Chống bóng ma)
-    let waitingPlayer = null;
+    // TÌM NGƯỜI KHÁC ĐANG CHỜ (BẮT BUỘC KHÁC TÊN VÀ THỜI GIAN < 10 GIÂY)
+    let opponent = null;
     for (const key in queue) {
       if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
-        waitingPlayer = key;
+        opponent = key;
         break;
       }
     }
 
-    if (waitingPlayer) {
+    if (opponent) {
+      // ĐÃ TÌM THẤY ĐỐI THỦ -> TẠO TRẬN
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
       await db.ref(`matches/${newMatchId}`).set({
         status: 'playing', 
-        p1_name: waitingPlayer,
+        p1_name: opponent,
         p2_name: CURRENT_USER.username,
         p1_started: false,
         p2_started: false,
@@ -204,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isSearching = false;
       joinMatch(newMatchId, false); 
     } else {
+      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI VÀ CHỜ
       await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
@@ -215,9 +218,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 15000);
 
+      // CHỜ ĐỐI THỦ TẠO TRẬN VÀ LÔI MÌNH VÀO
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
-        if (m && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
+        // CHỈ NHẬN TRẬN NẾU CÓ TÊN MÌNH VÀ TÊN ĐỐI THỦ HỢP LỆ
+        if (m && m.p1_name && m.p2_name && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
           clearTimeout(timeout);
           db.ref('matches').off('child_added', matchListener);
           isSearching = false;
