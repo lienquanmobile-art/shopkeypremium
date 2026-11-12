@@ -19,7 +19,7 @@
   color: #ffd700;
 }
 
-/* Lưới thẻ game */
+/* Lưới thẻ game (Hiện 1 ô vuông) */
 .game-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -49,12 +49,11 @@
 
 .game-card.locked {
   opacity: 0.7;
-  cursor: not-allowed;
+  cursor: pointer; /* Vẫn cho click để hiện thông báo mua */
 }
 .game-card.locked:hover {
-  border-color: rgba(255, 255, 255, 0.1);
-  transform: none;
-  box-shadow: none;
+  border-color: #ff3b5c;
+  box-shadow: 0 10px 20px rgba(255, 59, 92, 0.1);
 }
 
 .game-card-icon {
@@ -71,6 +70,7 @@
 .game-card p {
   color: #a0aec0;
   font-size: 13px;
+  margin-bottom: 5px;
 }
 
 .game-card .unlock-text {
@@ -98,7 +98,7 @@
   border-radius: 10px;
 }
 .game-hud {
-  display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 18px;
+  display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 18px; max-width: 600px; margin-left: auto; margin-right: auto;
 }
 .hud-p1 { color: #ffd700; }
 .hud-p2 { color: #00ff88; }
