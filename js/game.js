@@ -254,7 +254,6 @@ function showGameSetup() {
   document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('scoreP2').parentElement.style.display = 'block'; 
   
-  // Xóa chữ "Đang tìm trận..." cũ
   document.getElementById('matchStatus').textContent = ''; 
 }
 
@@ -279,9 +278,8 @@ function joinMatch(id, asPlayer1) {
     if (!data) return;
 
     if (data.status === 'ended') {
-      // SỬA LẠI LOGIC XÉT THẮNG THUA
+      // SỬA LẠI LOGIC XÉT THẮNG THUA DỰA TRÊN AI CHẾT TRƯỚC
       let iWin = false;
-      
       if (data.p1_dead && !data.p2_dead) {
         iWin = !isPlayer1; // P1 chết, mình thắng nếu mình là P2
       } else if (data.p2_dead && !data.p1_dead) {
@@ -346,30 +344,42 @@ function startServerLoop() {
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
+    // CHECK VA CHẠM P1
     if (state.p1_started) {
+      // Đâm tường
       if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
+      // Tự cắn mình
       if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      // Đâm vào thân P2
       if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
+      // Ăn táo
       if (p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
     }
 
+    // CHECK VA CHẠM P2
     if (state.p2_started) {
+      // Đâm tường
       if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
+      // Tự cắn mình
       if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
-      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      // Đâm vào thân P1
       if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+      // Ăn táo
       if (p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
     }
 
+    // HEAD-ON COLLISION (2 đầu đâm vào nhau)
+    if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) {
+      p1_dead = true; p2_dead = true;
+    }
+
     if (p1_dead || p2_dead || timeLeft <= 0) {
-      // Cập nhật chính xác ai chết
       await db.ref(`matches/${matchId}`).update({ 
         status: 'ended', 
         p1_score, 
         p2_score, 
-        p1_dead: p1_dead, 
-        p2_dead: p2_dead 
+        p1_dead, 
+        p2_dead 
       });
       return;
     }
