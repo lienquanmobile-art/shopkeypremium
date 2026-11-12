@@ -111,33 +111,25 @@
       <div id="home-game" class="home-content hidden">
         <div class="game-container">
           
-          <!-- MENU CHỌN GAME (Dạng lưới) -->
+          <!-- MENU CHỌN GAME -->
           <div id="gameMenu">
             <div class="game-header">
               <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
               <div class="coin-display">Số xu: <span id="userCoins">0</span></div>
             </div>
             
+            <!-- CHỈ CÓ DUY NHẤT 1 Ô VUÔNG GAME RẮN -->
             <div class="game-grid">
-              <!-- Thẻ Game Rắn -->
               <div class="game-card locked" id="snakeCard">
                 <div class="game-card-icon">🐍</div>
                 <h3>Rắn Săn Táo</h3>
                 <p>Đấu trường PvP Realtime</p>
                 <p class="unlock-text">Mở khóa: 1.000đ</p>
               </div>
-
-              <!-- Thẻ Game Ma Sói (Demo) -->
-              <div class="game-card locked">
-                <div class="game-card-icon">🐺</div>
-                <h3>Ma Sói</h3>
-                <p>Sắp ra mắt</p>
-                <p class="unlock-text" style="color: #a0aec0;">Đang phát triển</p>
-              </div>
             </div>
           </div>
 
-          <!-- KHU VỰC CÀI ĐẶT VÀ CHỜ (Ẩn đi, hiện khi ấn vào thẻ) -->
+          <!-- KHU VỰC CÀI ĐẶT (Hiện khi đã mua và ấn vào ô vuông) -->
           <div id="gameSetupArea" class="hidden">
             <button id="backToMenuBtn" class="btn-secondary" style="margin-bottom: 20px;">← Quay lại</button>
             <div class="game-setup">
@@ -153,8 +145,8 @@
             </div>
           </div>
 
-          <!-- BÀN CHƠI GAME (Ẩn đi, hiện khi ghép trận thành công) -->
-          <div id="gameBoard">
+          <!-- BÀN CHƠI GAME (Chỉ hiện khi đang trong trận) -->
+          <div id="gameBoard" class="hidden">
             <div class="game-hud">
               <div class="hud-p1">P1: <span id="scoreP1">0</span></div>
               <div class="hud-time" id="gameTimer">30</div>
