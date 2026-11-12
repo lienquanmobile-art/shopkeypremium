@@ -88,14 +88,10 @@ function enterApp(user) {
     document.getElementById('adminNavBtn').classList.add('hidden');
   }
 
-  // LẮNG NGHE SỐ DƯ VÀ TRẠNG THÁI BAN
   db.ref(`users/${user.username}`).on('value', snap => {
     const u = snap.val();
     if (!u) return;
-    
     updateBalanceDisplay(u.balance || 0);
-
-    // Kiểm tra xem có đang bị ban không
     if (u.banUntil && u.banUntil > Date.now()) {
       showBannedModal(u.banUntil, u.banReason);
     }
@@ -118,11 +114,9 @@ function bindLogout() {
   });
 }
 
-// HÀM HIỆN BẢNG BÁO BỊ CẤM
 function showBannedModal(banUntil, reason) {
   const d = new Date(banUntil);
   const dateStr = `${d.getDate()} tháng ${d.getMonth() + 1} năm ${d.getFullYear()} (${d.getHours()}h:${d.getMinutes() < 10 ? '0' + d.getMinutes() : d.getMinutes()})`;
-  
   document.getElementById('bannedMessage').innerHTML = `Bạn đã bị cấm! Tài khoản của bạn đã bị cấm đến <b style="color:#ff3b5c">${dateStr}</b>.<br><br>Lý do: <i style="color:#ff3b5c">${reason}</i>`;
   document.getElementById('bannedNoticeModal').classList.remove('hidden');
 }
@@ -136,6 +130,7 @@ function bindHomeUI() {
       document.getElementById('home-buykey').classList.toggle('hidden', target !== 'buykey');
       document.getElementById('home-deposit').classList.toggle('hidden', target !== 'deposit');
       document.getElementById('home-history').classList.toggle('hidden', target !== 'history');
+      document.getElementById('home-game').classList.toggle('hidden', target !== 'game');
       if (target === 'history') loadHistory();
     });
   });
