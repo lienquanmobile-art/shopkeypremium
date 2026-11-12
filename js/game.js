@@ -6,6 +6,7 @@ let matchId = null;
 let isPlayer1 = false;
 let gameUnlocked = false;
 let matchListener = null;
+let searchTimeout = null;
 
 const TILE_SIZE = 20;
 const COLS = 30;
@@ -87,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isGameRunning = false;
       isLocalGame = false;
       clearInterval(gameInterval);
+      clearTimeout(searchTimeout);
       if (matchId) {
         await db.ref(`matches/${matchId}`).remove();
         if (matchListener) db.ref('matches').off('child_added', matchListener);
@@ -149,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // --- GHÉP TRẬN PVP (BẢN FIX KẸT 100%) ---
+  // --- GHÉP TRẬN PVP (HÀNG ĐỢI THỰC SỰ) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -157,30 +159,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueRef = db.ref('matchmaking/queue');
     const myRef = queueRef.child(CURRENT_USER.username);
 
-    // Dọn dẹp listener cũ để tránh nhận trận rác
     if (matchListener) {
       db.ref('matches').off('child_added', matchListener);
       matchListener = null;
     }
+    clearTimeout(searchTimeout);
 
-    // Làm sạch hàng đợi của mình trước khi tìm
+    // Xóa hàng đợi cũ của mình nếu có
     await myRef.remove();
 
+    // Quét xem có ai đang đợi không
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
-    const now = Date.now();
     
-    // Tìm đối thủ (Khác tên và vừa mới bấm < 10s)
-    let opponent = null;
-    for (const key in queue) {
-      if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
-        opponent = key;
-        break;
-      }
-    }
+    // Lấy người đầu tiên trong hàng đợi (KHÔNG PHÂN BIỆT THỜI GIAN, MIỄN LÀ KHÁC MÌNH)
+    const opponent = Object.keys(queue).find(k => k !== CURRENT_USER.username);
 
     if (opponent) {
-      // CÓ ĐỐI THỦ -> TẠO TRẬN (Mình là P2)
+      // TÌM THẤY -> TẠO TRẬN LUÔN (Mình là P2)
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = false; 
       
@@ -202,10 +198,10 @@ document.addEventListener('DOMContentLoaded', () => {
       await myRef.remove();
       joinMatch(newMatchId, false); 
     } else {
-      // KHÔNG CÓ AI -> TỰ VÀO HÀNG ĐỢI VÀ CHỜ
-      await myRef.set({ timestamp: now });
+      // KHÔNG CÓ AI -> VÀO HÀNG ĐỢI CHỜ
+      await myRef.set({ timestamp: Date.now() });
       
-      const timeout = setTimeout(async () => {
+      searchTimeout = setTimeout(async () => {
         if (!matchId) {
           await myRef.remove();
           statusTxt.textContent = 'Không có trận đấu nào!';
@@ -216,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = db.ref('matches').on('child_added', (snap) => {
         const m = snap.val();
         if (m && m.p1_name && m.p2_name && (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username)) {
-          clearTimeout(timeout);
+          clearTimeout(searchTimeout);
           db.ref('matches').off('child_added', matchListener);
           joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
         }
