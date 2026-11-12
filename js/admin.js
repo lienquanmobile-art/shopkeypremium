@@ -1,13 +1,11 @@
 // admin.js
 let ADMIN_BOUND = false;
 
+// Lưu trữ các listener để có thể ngắt (off) khi chuyển tab, tránh rò rỉ bộ nhớ
+let listeners = {};
+
 window.initAdminPage = function (user) {
-  if (ADMIN_BOUND) {
-    loadBalanceUserOptions();
-    bindKeyTabs();
-    loadLogs();
-    return;
-  }
+  if (ADMIN_BOUND) return;
   ADMIN_BOUND = true;
 
   bindAdminTabs();
@@ -15,8 +13,18 @@ window.initAdminPage = function (user) {
   bindBalanceTab();
   bindKeyTabs();
   bindDenomButtons();
-  loadLogs();
+};
+
+// Hàm này được gọi từ main.js mỗi khi bấm vào tab "Quản lí"
+window.refreshAdminData = function() {
   loadBalanceUserOptions();
+  loadLogs();
+  
+  // Load lại tất cả các tab key
+  const packs = ['1d', '3d', '7d', '30d'];
+  packs.forEach(pack => {
+    renderKeyList(pack, `keyList${pack}`);
+  });
 };
 
 function bindAdminTabs() {
@@ -25,9 +33,11 @@ function bindAdminTabs() {
       document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.admin;
+      
       document.querySelectorAll('.admin-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`admin-${target}`).classList.remove('hidden');
 
+      // Kích hoạt load dữ liệu ngay khi bấm vào tab con
       if (target === 'log') loadLogs();
       if (target === 'balance') loadBalanceUserOptions();
     });
@@ -76,13 +86,19 @@ function bindCreateAccount() {
   });
 }
 
-// SỬA: Dùng .on() để tự động cập nhật danh sách User realtime khi có người nạp tiền/tạo mới
-async function loadBalanceUserOptions() {
+// ================== REALTIME USER ==================
+function loadBalanceUserOptions() {
   const sel = document.getElementById('balanceUserSelect');
   if (!sel) return;
   
-  db.ref('users').on('value', snap => {
+  // Ngắt listener cũ trước khi tạo mới
+  if (listeners['users']) listeners['users'].off();
+  listeners['users'] = db.ref('users');
+
+  listeners['users'].on('value', snap => {
     const users = snap.val() || {};
+    const currentVal = sel.value; // Giữ lại lựa chọn hiện tại
+    
     sel.innerHTML = '';
     for (const uname in users) {
       if (users[uname].role === 'USER') {
@@ -92,6 +108,8 @@ async function loadBalanceUserOptions() {
         sel.appendChild(opt);
       }
     }
+    // Khôi phục lại lựa chọn cũ nếu có
+    if (currentVal && users[currentVal]) sel.value = currentVal;
   });
 }
 
@@ -123,6 +141,7 @@ function bindDenomButtons() {
   });
 }
 
+// ================== REALTIME KEYS ==================
 function bindKeyTabs() {
   const map = {
     '1d':  { input: 'keyInput1d',  addBtn: 'addKey1d',  list: 'keyList1d'  },
@@ -151,12 +170,15 @@ function bindKeyTabs() {
   }
 }
 
-// SỬA: Dùng .on('value') thay vì .once('value') để cập nhật realtime
 function renderKeyList(pack, listId) {
   const ul = document.getElementById(listId);
   if (!ul) return;
   
-  db.ref(`keys/${pack}`).on('value', snap => {
+  const refName = `keys_${pack}`;
+  if (listeners[refName]) listeners[refName].off();
+  listeners[refName] = db.ref(`keys/${pack}`);
+  
+  listeners[refName].on('value', snap => {
     const obj = snap.val() || {};
     ul.innerHTML = '';
     const entries = Object.entries(obj);
@@ -180,12 +202,15 @@ function renderKeyList(pack, listId) {
   });
 }
 
-// SỬA: Dùng .on() cho Log để cập nhật liên tục
+// ================== REALTIME LOGS ==================
 function loadLogs() {
   const ul = document.getElementById('logList');
   if (!ul) return;
   
-  db.ref('logs').orderByChild('time').limitToLast(100).on('value', snap => {
+  if (listeners['logs']) listeners['logs'].off();
+  listeners['logs'] = db.ref('logs');
+
+  listeners['logs'].orderByChild('time').limitToLast(100).on('value', snap => {
     const obj = snap.val() || {};
     ul.innerHTML = '';
     const arr = Object.entries(obj).reverse();
