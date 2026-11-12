@@ -1,7 +1,5 @@
 // admin.js
 let ADMIN_BOUND = false;
-
-// Lưu trữ các listener để có thể ngắt (off) khi chuyển tab, tránh rò rỉ bộ nhớ
 let listeners = {};
 
 window.initAdminPage = function (user) {
@@ -15,12 +13,10 @@ window.initAdminPage = function (user) {
   bindDenomButtons();
 };
 
-// Hàm này được gọi từ main.js mỗi khi bấm vào tab "Quản lí"
 window.refreshAdminData = function() {
   loadBalanceUserOptions();
   loadLogs();
   
-  // Load lại tất cả các tab key
   const packs = ['1d', '3d', '7d', '30d'];
   packs.forEach(pack => {
     renderKeyList(pack, `keyList${pack}`);
@@ -37,7 +33,6 @@ function bindAdminTabs() {
       document.querySelectorAll('.admin-content').forEach(c => c.classList.add('hidden'));
       document.getElementById(`admin-${target}`).classList.remove('hidden');
 
-      // Kích hoạt load dữ liệu ngay khi bấm vào tab con
       if (target === 'log') loadLogs();
       if (target === 'balance') loadBalanceUserOptions();
     });
@@ -86,18 +81,16 @@ function bindCreateAccount() {
   });
 }
 
-// ================== REALTIME USER ==================
 function loadBalanceUserOptions() {
   const sel = document.getElementById('balanceUserSelect');
   if (!sel) return;
   
-  // Ngắt listener cũ trước khi tạo mới
   if (listeners['users']) listeners['users'].off();
   listeners['users'] = db.ref('users');
 
   listeners['users'].on('value', snap => {
     const users = snap.val() || {};
-    const currentVal = sel.value; // Giữ lại lựa chọn hiện tại
+    const currentVal = sel.value; 
     
     sel.innerHTML = '';
     for (const uname in users) {
@@ -108,7 +101,6 @@ function loadBalanceUserOptions() {
         sel.appendChild(opt);
       }
     }
-    // Khôi phục lại lựa chọn cũ nếu có
     if (currentVal && users[currentVal]) sel.value = currentVal;
   });
 }
@@ -141,7 +133,6 @@ function bindDenomButtons() {
   });
 }
 
-// ================== REALTIME KEYS ==================
 function bindKeyTabs() {
   const map = {
     '1d':  { input: 'keyInput1d',  addBtn: 'addKey1d',  list: 'keyList1d'  },
@@ -202,7 +193,6 @@ function renderKeyList(pack, listId) {
   });
 }
 
-// ================== REALTIME LOGS ==================
 function loadLogs() {
   const ul = document.getElementById('logList');
   if (!ul) return;
@@ -221,7 +211,14 @@ function loadLogs() {
     arr.forEach(([id, log]) => {
       const li = document.createElement('li');
       const t = new Date(log.time).toLocaleString('vi-VN');
-      li.innerHTML = `<span>[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
+      
+      // Làm nổi bật log mua Vượt Link
+      let colorStyle = '';
+      if (log.action === 'BUY_BYPASS') {
+        colorStyle = 'color: #ff3b5c; font-weight: bold; border: 1px solid rgba(255, 59, 92, 0.3); background: rgba(255, 59, 92, 0.1); border-radius: 8px; padding: 0 6px;';
+      }
+      
+      li.innerHTML = `<span style="${colorStyle}">[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
       ul.appendChild(li);
     });
   });
