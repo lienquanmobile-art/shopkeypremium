@@ -6,12 +6,13 @@ let matchId = null;
 let isPlayer1 = false;
 let currentUserSnakeName = "Player";
 let gameState = null;
+let gameUnlocked = false;
 
 const TILE_SIZE = 20;
 const COLS = 30;
 const ROWS = 20;
-const TICK_RATE = 150; // Tốc độ rắn (ms)
-const GAME_TIME = 30; // 30 giây
+const TICK_RATE = 150;
+const GAME_TIME = 30;
 
 document.addEventListener('DOMContentLoaded', () => {
   const gameTab = document.querySelector('[data-home="game"]');
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện phím (Gửi lên Firebase)
+  // Bắt sự kiện phím
   window.addEventListener('keydown', (e) => {
     if (!isGameRunning || !matchId) return;
     let newDir = null;
@@ -36,6 +37,96 @@ document.addEventListener('DOMContentLoaded', () => {
       db.ref(`matches/${matchId}/${myKey}`).set(newDir);
     }
   });
+
+  // Sự kiện click vào thẻ Game Rắn
+  document.getElementById('snakeCard')?.addEventListener('click', async () => {
+    if (!CURRENT_USER) return;
+    if (gameUnlocked) {
+      showGameSetup();
+    } else {
+      // Mua game
+      const cost = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER' ? 0 : 1000;
+      const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
+      const balance = snap.val().balance || 0;
+      if (balance < cost) return alert('Số dư không đủ 1.000đ để mở khóa game!');
+
+      if(confirm(`Bạn có muốn mở khóa Game Rắn với giá ${cost}đ?`)) {
+        await db.ref(`users/${CURRENT_USER.username}`).update({ balance: balance - cost, gameUnlocked: true });
+        writeLog(CURRENT_USER.username, 'BUY_GAME', 'Mở khóa Game Rắn');
+        loadGameData();
+        showGameSetup();
+      }
+    }
+  });
+
+  // Quay lại menu
+  document.getElementById('backToMenuBtn')?.addEventListener('click', () => {
+    document.getElementById('gameSetupArea').classList.add('hidden');
+    document.getElementById('gameMenu').classList.remove('hidden');
+  });
+
+  // Lưu tên
+  document.getElementById('saveNameBtn')?.addEventListener('click', () => {
+    const name = document.getElementById('snakeNameInput').value.trim();
+    if (!name) return alert('Vui lòng nhập tên!');
+    currentUserSnakeName = name;
+    document.getElementById('savedNameMsg').textContent = `Đã lưu tên: ${name}`;
+  });
+
+  // Nút chơi
+  document.getElementById('match1PBtn')?.addEventListener('click', () => {
+    alert('Chế độ 1 Player đang bảo trì! Vui lòng chơi 2 Player.');
+  });
+
+  document.getElementById('match2PBtn')?.addEventListener('click', async () => {
+    const statusTxt = document.getElementById('matchStatus');
+    statusTxt.textContent = 'Đang tìm trận... (15s)';
+    
+    const queueRef = db.ref('matchmaking/queue');
+    const myRef = queueRef.child(CURRENT_USER.username);
+
+    const snap = await queueRef.once('value');
+    const queue = snap.val() || {};
+    const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
+
+    if (waitingPlayer) {
+      const newMatchId = 'match_' + Date.now();
+      isPlayer1 = true; 
+      
+      await db.ref(`matches/${newMatchId}`).set({
+        status: 'playing',
+        p1_name: waitingPlayer,
+        p2_name: CURRENT_USER.username,
+        p1_score: 0, p2_score: 0,
+        p1_snake: [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}],
+        p2_snake: [{x: 24, y: 10}, {x: 25, y: 10}, {x: 26, y: 10}],
+        p1_dir: 'RIGHT', p2_dir: 'LEFT',
+        apple: { x: 15, y: 10 },
+        timeLeft: GAME_TIME,
+        lastTick: Date.now()
+      });
+      
+      await myRef.remove();
+      joinMatch(newMatchId, true);
+    } else {
+      await myRef.set({ timestamp: Date.now() });
+      
+      const timeout = setTimeout(async () => {
+        if (!matchId) {
+          await myRef.remove();
+          statusTxt.textContent = 'Không có trận đấu nào!';
+        }
+      }, 15000);
+
+      db.ref('matches').on('child_added', (snap) => {
+        const m = snap.val();
+        if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
+          clearTimeout(timeout);
+          joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
+        }
+      });
+    }
+  });
 });
 
 async function loadGameData() {
@@ -44,89 +135,25 @@ async function loadGameData() {
   const u = snap.val();
   document.getElementById('userCoins').textContent = u.coins || 0;
   
+  const snakeCard = document.getElementById('snakeCard');
   if (u.gameUnlocked) {
-    document.getElementById('gameUnlockArea').classList.add('hidden');
-    document.getElementById('gamePlayArea').classList.remove('hidden');
+    gameUnlocked = true;
+    snakeCard.classList.remove('locked');
+    snakeCard.querySelector('.unlock-text').textContent = "Đã mua - Click để chơi";
+    snakeCard.querySelector('.unlock-text').style.color = "#00ff88";
   } else {
-    document.getElementById('gameUnlockArea').classList.remove('hidden');
-    document.getElementById('gamePlayArea').classList.add('hidden');
+    gameUnlocked = false;
+    snakeCard.classList.add('locked');
+    snakeCard.querySelector('.unlock-text').textContent = "Mở khóa: 1.000đ";
+    snakeCard.querySelector('.unlock-text').style.color = "#00e5ff";
   }
 }
 
-document.getElementById('buyGameBtn')?.addEventListener('click', async () => {
-  if (!CURRENT_USER) return;
-  const cost = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER' ? 0 : 1000;
-  const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
-  const balance = snap.val().balance || 0;
-
-  if (balance < cost) return alert('Số dư không đủ 1.000đ để mở khóa game!');
-
-  await db.ref(`users/${CURRENT_USER.username}`).update({ balance: balance - cost, gameUnlocked: true });
-  writeLog(CURRENT_USER.username, 'BUY_GAME', 'Mở khóa Game Rắn');
-  loadGameData();
-});
-
-document.getElementById('saveNameBtn')?.addEventListener('click', () => {
-  const name = document.getElementById('snakeNameInput').value.trim();
-  if (!name) return alert('Vui lòng nhập tên!');
-  currentUserSnakeName = name;
-  document.getElementById('savedNameMsg').textContent = `Đã lưu tên: ${name}`;
-});
-
-document.getElementById('match1PBtn')?.addEventListener('click', () => {
-  alert('Chế độ 1 Player đang bảo trì! Vui lòng chơi 2 Player.');
-});
-
-document.getElementById('match2PBtn')?.addEventListener('click', async () => {
-  const statusTxt = document.getElementById('matchStatus');
-  statusTxt.textContent = 'Đang tìm trận... (15s)';
-  
-  const queueRef = db.ref('matchmaking/queue');
-  const myRef = queueRef.child(CURRENT_USER.username);
-
-  const snap = await queueRef.once('value');
-  const queue = snap.val() || {};
-  const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
-
-  if (waitingPlayer) {
-    const newMatchId = 'match_' + Date.now();
-    isPlayer1 = true; 
-    
-    await db.ref(`matches/${newMatchId}`).set({
-      status: 'playing',
-      p1_name: waitingPlayer,
-      p2_name: CURRENT_USER.username,
-      p1_score: 0, p2_score: 0,
-      p1_snake: [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}],
-      p2_snake: [{x: 24, y: 10}, {x: 25, y: 10}, {x: 26, y: 10}],
-      p1_dir: 'RIGHT', p2_dir: 'LEFT',
-      apple: { x: 15, y: 10 },
-      timeLeft: GAME_TIME,
-      lastTick: Date.now()
-    });
-    
-    await myRef.remove();
-    joinMatch(newMatchId, true);
-  } else {
-    await myRef.set({ timestamp: Date.now() });
-    statusTxt.textContent = 'Đang tìm trận... (15s)';
-    
-    const timeout = setTimeout(async () => {
-      if (!matchId) {
-        await myRef.remove();
-        statusTxt.textContent = 'Không có trận đấu nào!';
-      }
-    }, 15000);
-
-    db.ref('matches').on('child_added', (snap) => {
-      const m = snap.val();
-      if (m.p1_name === CURRENT_USER.username || m.p2_name === CURRENT_USER.username) {
-        clearTimeout(timeout);
-        joinMatch(snap.key, m.p1_name === CURRENT_USER.username);
-      }
-    });
-  }
-});
+function showGameSetup() {
+  document.getElementById('gameMenu').classList.add('hidden');
+  document.getElementById('gameSetupArea').classList.remove('hidden');
+  document.getElementById('gameBoard').style.display = 'none';
+}
 
 function joinMatch(id, asPlayer1) {
   matchId = id;
@@ -134,9 +161,8 @@ function joinMatch(id, asPlayer1) {
   document.getElementById('matchStatus').textContent = 'Đã tìm thấy trận! Chuẩn bị...';
   
   setTimeout(() => {
-    document.getElementById('gameMenu').classList.add('hidden');
-    document.getElementById('gameBoard').classList.remove('hidden');
-    document.getElementById('gameArea').style.display = 'block';
+    document.getElementById('gameSetupArea').classList.add('hidden');
+    document.getElementById('gameBoard').style.display = 'block';
     startMultiplayerGame();
   }, 1500);
 }
@@ -163,7 +189,6 @@ function startMultiplayerGame() {
     }
   });
 
-  // P1 CHẠY SERVER ẢO
   if (isPlayer1) {
     gameInterval = setInterval(async () => {
       if (!gameState || gameState.status === 'ended') return;
@@ -181,9 +206,7 @@ function startMultiplayerGame() {
 
       const now = Date.now();
       const dt = now - state.lastTick;
-      if (dt >= 1000) {
-        timeLeft -= Math.floor(dt / 1000);
-      }
+      if (dt >= 1000) timeLeft -= Math.floor(dt / 1000);
 
       let p1_head = { ...p1_snake[0] };
       if (state.p1_dir === 'UP') p1_head.y--;
@@ -279,9 +302,9 @@ async function endGame(isWin, data) {
     matchId = null;
   }
 
-  document.getElementById('gameBoard').classList.add('hidden');
+  document.getElementById('gameBoard').style.display = 'none';
   document.getElementById('gameMenu').classList.remove('hidden');
-  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('gameSetupArea').classList.add('hidden');
 
   let coinsEarned = 0;
   const myScore = isPlayer1 ? data.p1_score : data.p2_score;
