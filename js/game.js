@@ -9,7 +9,7 @@ let matchListener = null;
 const TILE_SIZE = 20;
 const COLS = 30;
 const ROWS = 20;
-const TICK_RATE = 250; 
+const TICK_RATE = 200; 
 const GAME_TIME = 30;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault(); 
     }
     
-    if (!isGameRunning || !matchId) return; // Chỉ xử lý PvP ở đây
+    if (!isGameRunning || !matchId) return; 
     let newDir = null;
     if (e.key === 'ArrowUp') newDir = 'UP';
     if (e.key === 'ArrowDown') newDir = 'DOWN';
@@ -36,7 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (newDir) {
       const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
-      db.ref(`matches/${matchId}/${myKey}`).set(newDir);
+      const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
+      
+      const updates = {};
+      updates[myKey] = newDir;
+      updates[startKey] = true; // Báo hiệu đã bắt đầu di chuyển
+      
+      db.ref(`matches/${matchId}`).update(updates);
     }
   });
 
@@ -45,7 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => {
       if (!isGameRunning || !matchId) return;
       const myKey = isPlayer1 ? 'p1_dir' : 'p2_dir';
-      db.ref(`matches/${matchId}/${myKey}`).set(btn.dataset.dir);
+      const startKey = isPlayer1 ? 'p1_started' : 'p2_started';
+      
+      const updates = {};
+      updates[myKey] = btn.dataset.dir;
+      updates[startKey] = true;
+      
+      db.ref(`matches/${matchId}`).update(updates);
     });
   });
 
@@ -93,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // NÚT CHƠI 1P
+  // --- CHẾ ĐỘ 1 PLAYER ---
   document.getElementById('match1PBtn')?.addEventListener('click', () => {
     matchId = null;
     isPlayer1 = true;
@@ -105,10 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.game-hud').style.display = 'flex';
     document.getElementById('gameTimer').textContent = '∞'; 
     
-    // Đảm bảo nút ready bị ẩn
-    const rBtn = document.getElementById('readyBtn');
-    if(rBtn) rBtn.classList.add('hidden');
-
     let localSnake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
     let localApple = { x: 15, y: 10 };
     let localScore = 0;
@@ -169,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
-  // NÚT GHÉP TRẬN PVP
+  // --- CHẾ ĐỘ 2 PLAYER (PVP KHÔNG CẦN READY) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     const statusTxt = document.getElementById('matchStatus');
     statusTxt.textContent = 'Đang tìm trận... (15s)';
@@ -182,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
+    // Dọn dẹp hàng đợi cũ
     await myRef.remove(); 
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
@@ -191,14 +200,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const newMatchId = 'match_' + Date.now();
       isPlayer1 = true; 
       
+      // Khởi tạo trận đấu với rắn 1 block, đứng im (started: false)
       await db.ref(`matches/${newMatchId}`).set({
-        status: 'waiting', 
+        status: 'playing', 
         p1_name: waitingPlayer,
         p2_name: CURRENT_USER.username,
-        p1_ready: false, p2_ready: false,
+        p1_started: false,
+        p2_started: false,
         p1_score: 0, p2_score: 0,
-        p1_snake: [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}],
-        p2_snake: [{x: 24, y: 10}, {x: 25, y: 10}, {x: 26, y: 10}],
+        p1_snake: [{x: 5, y: 10}], // Rắn 1 block
+        p2_snake: [{x: 24, y: 10}], // Rắn 1 block
         p1_dir: 'RIGHT', p2_dir: 'LEFT',
         apple: { x: 15, y: 10 },
         timeLeft: GAME_TIME,
@@ -261,69 +272,33 @@ function joinMatch(id, asPlayer1) {
   matchId = id;
   isPlayer1 = asPlayer1;
   
-  // Ẩn phần setup, hiện bàn chơi
+  // Vào trận luôn, không cần Sẵn sàng
   document.getElementById('gameSetupArea').classList.add('hidden');
   document.getElementById('gameBoard').classList.remove('hidden');
   document.getElementById('gameBoard').style.display = 'block';
-  
-  // Tạo/Reset nút Sẵn sàng
-  let readyBtn = document.getElementById('readyBtn');
-  if (!readyBtn) {
-    readyBtn = document.createElement('button');
-    readyBtn.id = 'readyBtn';
-    readyBtn.className = 'btn-primary';
-    readyBtn.style.marginTop = '20px';
-    readyBtn.textContent = 'SẴN SÀNG';
-    document.getElementById('gameBoard').insertBefore(readyBtn, document.getElementById('gameArea'));
-  }
-  readyBtn.classList.remove('hidden');
-  readyBtn.disabled = false;
-  readyBtn.textContent = 'SẴN SÀNG';
-  
-  // Ẩn bàn chơi đi, chờ ready
-  document.getElementById('gameArea').style.display = 'none';
-  document.querySelector('.game-hud').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  document.querySelector('.game-hud').style.display = 'flex';
 
-  readyBtn.onclick = async () => {
-    readyBtn.disabled = true;
-    readyBtn.textContent = 'Đang chờ đối thủ...';
-    const myReadyKey = isPlayer1 ? 'p1_ready' : 'p2_ready';
-    await db.ref(`matches/${matchId}/${myReadyKey}`).set(true);
-  };
-
-  // Lắng nghe trạng thái
   const matchRef = db.ref(`matches/${matchId}`);
   matchRef.on('value', snap => {
     const data = snap.val();
     if (!data) return;
 
-    if (data.p1_ready && data.p2_ready && data.status === 'waiting') {
-      matchRef.update({ status: 'playing' });
+    document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
+    document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
+    document.getElementById('gameTimer').textContent = data.timeLeft;
+    
+    drawCanvas(data);
+
+    // Nếu có 1 người bấm nút (started == true) -> Bắt đầu chạy Server Ảo (nếu là P1)
+    if ((data.p1_started || data.p2_started) && isPlayer1 && !isGameRunning) {
+      isGameRunning = true;
+      startServerLoop(); 
     }
 
-    if (data.status === 'playing') {
-      document.getElementById('readyBtn').classList.add('hidden');
-      
-      // Nếu chưa bắt đầu vòng lặp game thì bật lên
-      if (!isGameRunning) {
-        isGameRunning = true;
-        document.getElementById('gameArea').style.display = 'block';
-        document.querySelector('.game-hud').style.display = 'flex';
-        document.getElementById('gameTimer').textContent = data.timeLeft;
-        
-        if (isPlayer1) startServerLoop(); // Chỉ P1 chạy server ảo
-      }
-
-      // Render liên tục
-      document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
-      document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
-      document.getElementById('gameTimer').textContent = data.timeLeft;
-      drawCanvas(data);
-
-      if (data.status === 'ended') {
-        const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
-        endGame(iWin, data);
-      }
+    if (data.status === 'ended') {
+      const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
+      endGame(iWin, data);
     }
   });
 }
@@ -343,40 +318,57 @@ function startServerLoop() {
 
     const now = Date.now();
     const dt = now - state.lastTick;
-    if (dt >= 1000) timeLeft -= Math.floor(dt / 1000);
+    
+    // Đếm ngược thời gian (Chỉ đếm khi đã có người bấm nút)
+    if (dt >= 1000 && (state.p1_started || state.p2_started)) {
+      timeLeft -= Math.floor(dt / 1000);
+    }
 
     let p1_head = { ...p1_snake[0] };
-    if (state.p1_dir === 'UP') p1_head.y--;
-    if (state.p1_dir === 'DOWN') p1_head.y++;
-    if (state.p1_dir === 'LEFT') p1_head.x--;
-    if (state.p1_dir === 'RIGHT') p1_head.x++;
-
     let p2_head = { ...p2_snake[0] };
-    if (state.p2_dir === 'UP') p2_head.y--;
-    if (state.p2_dir === 'DOWN') p2_head.y++;
-    if (state.p2_dir === 'LEFT') p2_head.x--;
-    if (state.p2_dir === 'RIGHT') p2_head.x++;
+
+    // Chỉ di chuyển nếu người đó đã bấm nút (started == true)
+    if (state.p1_started) {
+      if (state.p1_dir === 'UP') p1_head.y--;
+      if (state.p1_dir === 'DOWN') p1_head.y++;
+      if (state.p1_dir === 'LEFT') p1_head.x--;
+      if (state.p1_dir === 'RIGHT') p1_head.x++;
+    }
+    
+    if (state.p2_started) {
+      if (state.p2_dir === 'UP') p2_head.y--;
+      if (state.p2_dir === 'DOWN') p2_head.y++;
+      if (state.p2_dir === 'LEFT') p2_head.x--;
+      if (state.p2_dir === 'RIGHT') p2_head.x++;
+    }
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
-    if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
-    if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
-    if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
-    if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
-    if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
-    if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
-    if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+    // Chỉ check va chạm nếu người đó đang di chuyển
+    if (state.p1_started) {
+      if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
+      if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      if (p2_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
+      if (p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
+    }
 
-    if (!p1_dead && p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
-    if (!p2_dead && p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
+    if (state.p2_started) {
+      if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
+      if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+      if (p1_head.x === p2_head.x && p1_head.y === p2_head.y) { p1_dead = true; p2_dead = true; }
+      if (p1_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
+      if (p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
+    }
 
     if (p1_dead || p2_dead || timeLeft <= 0) {
       await db.ref(`matches/${matchId}`).update({ status: 'ended', p1_score, p2_score });
       return;
     }
 
-    if (!p1_dead) { p1_snake.unshift(p1_head); if (!p1_ate) p1_snake.pop(); }
-    if (!p2_dead) { p2_snake.unshift(p2_head); if (!p2_ate) p2_snake.pop(); }
+    // Cập nhật thân rắn
+    if (state.p1_started && !p1_dead) { p1_snake.unshift(p1_head); if (!p1_ate) p1_snake.pop(); }
+    if (state.p2_started && !p2_dead) { p2_snake.unshift(p2_head); if (!p2_ate) p2_snake.pop(); }
 
     if (p1_ate || p2_ate) {
       let newApple;
