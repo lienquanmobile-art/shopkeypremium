@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(localMove, TICK_RATE);
   });
 
+  // --- GHÉP TRẬN PVP (FIX TRẬN ẢO TRÊN PC) ---
   document.getElementById('match2PBtn')?.addEventListener('click', async () => {
     if (isSearching) return; 
     isSearching = true;
@@ -166,9 +167,19 @@ document.addEventListener('DOMContentLoaded', () => {
       matchListener = null;
     }
 
+    // Lấy hàng đợi và tìm đối thủ
     const snap = await queueRef.once('value');
     const queue = snap.val() || {};
-    const waitingPlayer = Object.keys(queue).find(k => k !== CURRENT_USER.username);
+    const now = Date.now();
+    
+    // CHỈ TÌM NHỮNG NGƯỜI VỪA MỚI BẤM < 10 GIÂY (Chống bóng ma)
+    let waitingPlayer = null;
+    for (const key in queue) {
+      if (key !== CURRENT_USER.username && (now - queue[key].timestamp) < 10000) {
+        waitingPlayer = key;
+        break;
+      }
+    }
 
     if (waitingPlayer) {
       const newMatchId = 'match_' + Date.now();
@@ -193,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isSearching = false;
       joinMatch(newMatchId, false); 
     } else {
-      await myRef.set({ timestamp: Date.now() });
+      await myRef.set({ timestamp: now });
       
       const timeout = setTimeout(async () => {
         if (!matchId) {
@@ -265,11 +276,8 @@ function joinMatch(id, asPlayer1) {
     const data = snap.val();
     if (!data) return;
 
-    // NẾU ĐÃ KẾT THÚC -> XỬ LÝ THẮNG THUA DỰA TRÊN AI CHẾT TRƯỚC
     if (data.status === 'ended') {
-      // p1_dead hoặc p2_dead được lưu trong data khi trận kết thúc
       const iWin = (isPlayer1 && data.p2_dead) || (!isPlayer1 && data.p1_dead);
-      // Nếu cả 2 cùng chết, hoặc hết giờ -> So sánh điểm
       let finalWin = iWin;
       if (data.p1_dead && data.p2_dead) {
         finalWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
@@ -332,7 +340,6 @@ function startServerLoop() {
 
     let p1_dead = false, p2_dead = false, p1_ate = false, p2_ate = false;
 
-    // Check va chạm P1
     if (state.p1_started) {
       if (p1_head.x < 0 || p1_head.x >= COLS || p1_head.y < 0 || p1_head.y >= ROWS) p1_dead = true;
       if (p1_snake.some(s => s.x === p1_head.x && s.y === p1_head.y)) p1_dead = true;
@@ -341,7 +348,6 @@ function startServerLoop() {
       if (p1_head.x === apple.x && p1_head.y === apple.y) { p1_score++; p1_ate = true; }
     }
 
-    // Check va chạm P2
     if (state.p2_started) {
       if (p2_head.x < 0 || p2_head.x >= COLS || p2_head.y < 0 || p2_head.y >= ROWS) p2_dead = true;
       if (p2_snake.some(s => s.x === p2_head.x && s.y === p2_head.y)) p2_dead = true;
@@ -350,7 +356,6 @@ function startServerLoop() {
       if (p2_head.x === apple.x && p2_head.y === apple.y) { p2_score++; p2_ate = true; }
     }
 
-    // KẾT THÚC TRẬN: Lưu lại ai chết để xét thắng thua
     if (p1_dead || p2_dead || timeLeft <= 0) {
       await db.ref(`matches/${matchId}`).update({ 
         status: 'ended', 
