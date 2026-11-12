@@ -73,24 +73,26 @@ function bindCreateAccount() {
     flash(msg, 'Tạo tài khoản thành công', '#00e5ff');
     document.getElementById('createUsername').value = '';
     document.getElementById('createPassword').value = '';
-    loadBalanceUserOptions();
   });
 }
 
+// SỬA: Dùng .on() để tự động cập nhật danh sách User realtime khi có người nạp tiền/tạo mới
 async function loadBalanceUserOptions() {
   const sel = document.getElementById('balanceUserSelect');
   if (!sel) return;
-  const snap = await db.ref('users').once('value');
-  const users = snap.val() || {};
-  sel.innerHTML = '';
-  for (const uname in users) {
-    if (users[uname].role === 'USER') {
-      const opt = document.createElement('option');
-      opt.value = uname;
-      opt.textContent = `${uname} (${formatMoney(users[uname].balance || 0)}đ)`;
-      sel.appendChild(opt);
+  
+  db.ref('users').on('value', snap => {
+    const users = snap.val() || {};
+    sel.innerHTML = '';
+    for (const uname in users) {
+      if (users[uname].role === 'USER') {
+        const opt = document.createElement('option');
+        opt.value = uname;
+        opt.textContent = `${uname} (${formatMoney(users[uname].balance || 0)}đ)`;
+        sel.appendChild(opt);
+      }
     }
-  }
+  });
 }
 
 function bindBalanceTab() {
@@ -110,7 +112,6 @@ function bindBalanceTab() {
     await writeLog(CURRENT_USER.username, 'ADD_BALANCE', `Cộng ${formatMoney(amount)}đ cho ${uname}`);
     flash(msg, `Đã cộng ${formatMoney(amount)}đ cho ${uname}`, '#00e5ff');
     document.getElementById('balanceAmount').value = '';
-    loadBalanceUserOptions();
   });
 }
 
@@ -135,10 +136,7 @@ function bindKeyTabs() {
     const addBtn = document.getElementById(cfg.addBtn);
     if (!addBtn) continue;
 
-    if (addBtn.dataset.bound === '1') {
-      renderKeyList(pack, cfg.list);
-      continue;
-    }
+    if (addBtn.dataset.bound === '1') continue;
     addBtn.dataset.bound = '1';
 
     addBtn.addEventListener('click', async () => {
@@ -147,55 +145,59 @@ function bindKeyTabs() {
       await db.ref(`keys/${pack}`).push(val);
       await writeLog(CURRENT_USER.username, 'ADD_KEY', `Thêm key vào gói ${pack}: ${val}`);
       document.getElementById(cfg.input).value = '';
-      renderKeyList(pack, cfg.list);
     });
 
     renderKeyList(pack, cfg.list);
   }
 }
 
-async function renderKeyList(pack, listId) {
-  const snap = await db.ref(`keys/${pack}`).once('value');
-  const obj = snap.val() || {};
+// SỬA: Dùng .on('value') thay vì .once('value') để cập nhật realtime
+function renderKeyList(pack, listId) {
   const ul = document.getElementById(listId);
   if (!ul) return;
-  ul.innerHTML = '';
-  const entries = Object.entries(obj);
-  if (entries.length === 0) {
-    ul.innerHTML = '<li style="color:#666">Chưa có key nào</li>';
-    return;
-  }
-  entries.forEach(([id, key]) => {
-    const li = document.createElement('li');
-    li.innerHTML = `<code>${key}</code>`;
-    const del = document.createElement('button');
-    del.textContent = 'Xóa';
-    del.className = 'btn-secondary';
-    del.onclick = async () => {
-      await db.ref(`keys/${pack}/${id}`).remove();
-      await writeLog(CURRENT_USER.username, 'DELETE_KEY', `Xóa key khỏi gói ${pack}: ${key}`);
-      renderKeyList(pack, listId);
-    };
-    li.appendChild(del);
-    ul.appendChild(li);
+  
+  db.ref(`keys/${pack}`).on('value', snap => {
+    const obj = snap.val() || {};
+    ul.innerHTML = '';
+    const entries = Object.entries(obj);
+    if (entries.length === 0) {
+      ul.innerHTML = '<li style="color:#666">Chưa có key nào</li>';
+      return;
+    }
+    entries.forEach(([id, key]) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<code>${key}</code>`;
+      const del = document.createElement('button');
+      del.textContent = 'Xóa';
+      del.className = 'btn-secondary';
+      del.onclick = async () => {
+        await db.ref(`keys/${pack}/${id}`).remove();
+        await writeLog(CURRENT_USER.username, 'DELETE_KEY', `Xóa key khỏi gói ${pack}: ${key}`);
+      };
+      li.appendChild(del);
+      ul.appendChild(li);
+    });
   });
 }
 
-async function loadLogs() {
+// SỬA: Dùng .on() cho Log để cập nhật liên tục
+function loadLogs() {
   const ul = document.getElementById('logList');
   if (!ul) return;
-  const snap = await db.ref('logs').orderByChild('time').limitToLast(100).once('value');
-  const obj = snap.val() || {};
-  ul.innerHTML = '';
-  const arr = Object.entries(obj).reverse();
-  if (arr.length === 0) {
-    ul.innerHTML = '<li style="color:#666">Chưa có log</li>';
-    return;
-  }
-  arr.forEach(([id, log]) => {
-    const li = document.createElement('li');
-    const t = new Date(log.time).toLocaleString('vi-VN');
-    li.innerHTML = `<span>[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
-    ul.appendChild(li);
+  
+  db.ref('logs').orderByChild('time').limitToLast(100).on('value', snap => {
+    const obj = snap.val() || {};
+    ul.innerHTML = '';
+    const arr = Object.entries(obj).reverse();
+    if (arr.length === 0) {
+      ul.innerHTML = '<li style="color:#666">Chưa có log</li>';
+      return;
+    }
+    arr.forEach(([id, log]) => {
+      const li = document.createElement('li');
+      const t = new Date(log.time).toLocaleString('vi-VN');
+      li.innerHTML = `<span>[${t}] <b>${log.actor}</b> → ${log.action}</span> <span>${log.detail || ''}</span>`;
+      ul.appendChild(li);
+    });
   });
 }
