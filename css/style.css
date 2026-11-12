@@ -359,7 +359,13 @@ body {
   justify-content: space-between;
   align-items: center;
 }
-.history-info p { color: #a0aec0; font-size: 14px; margin-bottom: 4px; }
+/* FIX LỖI CHỮ ĐÈ NHAU */
+.history-info { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 6px; 
+}
+.history-info p { color: #a0aec0; font-size: 14px; margin-bottom: 0; }
 .history-info strong { color: #fff; font-size: 16px; }
 .history-key code {
   color: #00e5ff;
