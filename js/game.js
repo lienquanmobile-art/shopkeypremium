@@ -250,23 +250,26 @@ function joinMatch(id, asPlayer1) {
   document.querySelector('.game-hud').style.display = 'flex';
 
   const matchRef = db.ref(`matches/${matchId}`);
+  
+  // Sử dụng .off trước khi .on để tránh bị nhân đôi listener
+  matchRef.off('value');
+  
   matchRef.on('value', snap => {
     const data = snap.val();
     if (!data) return;
 
-    // Cập nhật HUD
-    document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
-    document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
-    document.getElementById('gameTimer').textContent = data.timeLeft;
-    
-    drawCanvas(data);
-
-    // Nếu trận đấu kết thúc -> Hiện thông báo
+    // Nếu trận đấu kết thúc -> Hiện thông báo ngay lập tức
     if (data.status === 'ended') {
       const iWin = (isPlayer1 && data.p1_score >= data.p2_score) || (!isPlayer1 && data.p2_score >= data.p1_score);
       endGame(iWin, data);
       return;
     }
+
+    // Nếu đang chơi -> Render
+    document.getElementById('scoreP1').textContent = isPlayer1 ? data.p1_score : data.p2_score;
+    document.getElementById('scoreP2').textContent = isPlayer1 ? data.p2_score : data.p1_score;
+    document.getElementById('gameTimer').textContent = data.timeLeft;
+    drawCanvas(data);
 
     // Bắt đầu chạy Server Ảo nếu có người ấn nút
     if (isPlayer1 && (data.p1_started || data.p2_started) && !gameInterval) {
