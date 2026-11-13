@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bắt sự kiện click vào thẻ Rắn Săn Táo
+  // Bắt sự kiện click vào thẻ Rắn Săn Táo đã chết
   document.getElementById('snakeCard')?.addEventListener('click', () => {
-    alert('Trò chơi Rắn Săn Táo đã bị xóa do lỗi kỹ thuật đồng bộ! Vui lòng quay lại sau.');
+    alert(`Game đã bị xóa\nVui lòng chơi game khác\nChân thành xin lỗi vì sự bất tiện này`);
   });
 });
