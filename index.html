@@ -107,68 +107,19 @@
         <div class="history-box"><h3>Lịch sử mua hàng</h3><ul id="historyList" class="history-list"></ul></div>
       </div>
 
-      <!-- KHỐI GAME -->
+      <!-- KHỐI GAME (ĐÃ DỌN DẸP) -->
       <div id="home-game" class="home-content hidden">
         <div class="game-container">
-          
-          <!-- MENU CHỌN GAME -->
-          <div id="gameMenu">
-            <div class="game-header">
-              <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
-              <div class="coin-display">Số xu: <span id="userCoins">0</span></div>
-            </div>
-            
-            <div class="game-grid">
-              <div class="game-card locked" id="snakeCard">
-                <div class="game-card-icon">🐍</div>
-                <h3>Rắn Săn Táo</h3>
-                <p>Đấu trường PvP Realtime</p>
-                <p class="unlock-text">Mở khóa: 1.000đ</p>
-              </div>
+          <div class="game-header">
+            <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
+          </div>
+          <div class="game-grid">
+            <div class="game-card locked" id="snakeCard" style="opacity: 1;">
+              <div class="game-card-icon">🐍</div>
+              <h3>Rắn Săn Táo</h3>
+              <p style="color: #ff3b5c; font-weight: bold; margin-top: 10px;">Đã bị xóa</p>
             </div>
           </div>
-
-          <!-- KHU VỰC CÀI ĐẶT -->
-          <div id="gameSetupArea" class="hidden">
-            <button id="backToMenuBtn" class="btn-secondary" style="margin-bottom: 20px;">← Quay lại</button>
-            <div class="game-setup">
-              <input type="text" id="snakeNameInput" placeholder="Nhập tên cho snake của bạn..." maxlength="15" />
-              <button id="saveNameBtn" class="btn-secondary" style="width: 100%; margin-bottom: 15px;">Lưu tên</button>
-              <p id="savedNameMsg" style="color: #00ff88; font-size: 14px; margin-bottom: 15px;"></p>
-              
-              <div class="btn-row">
-                <button id="match1PBtn" class="btn-primary" style="background: linear-gradient(135deg, #00ff88, #00e5ff);">Chơi 1P</button>
-                <button id="match2PBtn" class="btn-primary">Ghép Trận PvP</button>
-              </div>
-              <p id="matchStatus" style="color: #ffd700; margin-top: 15px; font-weight: bold; text-align: center;"></p>
-            </div>
-          </div>
-
-          <!-- BÀN CHƠI GAME -->
-          <div id="gameBoard" class="hidden">
-            <div class="game-hud">
-              <div class="hud-p1">P1: <span id="scoreP1">0</span></div>
-              <div class="hud-time" id="gameTimer">30</div>
-              <div class="hud-p2">P2: <span id="scoreP2">0</span></div>
-            </div>
-            
-            <div id="gameArea">
-              <canvas id="gameCanvas" width="600" height="400"></canvas>
-            </div>
-
-            <!-- PHÍM ĐIỀU HƯỚNG CHO ĐIỆN THOẠI -->
-            <div class="mobile-controls" id="mobileControls">
-              <button class="dpad-btn" data-dir="UP">▲</button>
-              <div style="display:flex; gap: 40px;">
-                <button class="dpad-btn" data-dir="LEFT">◀</button>
-                <button class="dpad-btn" data-dir="RIGHT">▶</button>
-              </div>
-              <button class="dpad-btn" data-dir="DOWN">▼</button>
-            </div>
-
-            <button id="leaveGameBtn" class="btn-secondary" style="margin-top: 15px;">Thoát trận</button>
-          </div>
-
         </div>
       </div>
     </section>
