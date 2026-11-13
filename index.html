@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/admin.css" />
   <link rel="stylesheet" href="css/game.css" />
+  <!-- Thư viện pháo hoa -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
@@ -364,11 +366,24 @@
         </div>
       </div>
 
-      <!-- THẺ HIỂN THỊ LỖI -->
       <p id="exchangeErrorMsg" style="color: #ff3b5c; font-size: 14px; font-weight: bold; text-align: center; margin-top: 10px; margin-bottom: 5px;"></p>
 
       <button id="confirmExchangeBtn" class="btn-primary" style="margin-top: 10px;">Đổi</button>
       <button id="closeExchangeBtn" class="btn-secondary" style="width:100%">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL 5: CHÚC MỪNG TRÚNG THƯỞNG -->
+  <div id="congratsModal" class="modal-overlay hidden" style="z-index: 10010;">
+    <div class="modal-content" style="border-color: #ffd700; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4); text-align: center;">
+      <h2 style="color: #ffd700; font-size: 28px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);">CHÚC MỪNG!</h2>
+      <p style="color: #a0aec0; font-size: 16px; margin-bottom: 20px;">Bạn đã nhận được:</p>
+      
+      <div style="background: rgba(255, 215, 0, 0.1); border: 2px dashed #ffd700; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
+        <span id="congratsReward" style="color: #fff; font-size: 24px; font-weight: bold;">10.000 xu</span>
+      </div>
+
+      <button id="closeCongratsBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000;">TUYỆT VỜI</button>
     </div>
   </div>
 
