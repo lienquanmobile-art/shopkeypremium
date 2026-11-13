@@ -107,17 +107,20 @@
         <div class="history-box"><h3>Lịch sử mua hàng</h3><ul id="historyList" class="history-list"></ul></div>
       </div>
 
-      <!-- KHỐI GAME (ĐÃ DỌN DẸP) -->
+      <!-- KHỐI GAME (ĐÃ KHAI TỬ) -->
       <div id="home-game" class="home-content hidden">
         <div class="game-container">
           <div class="game-header">
             <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
           </div>
           <div class="game-grid">
-            <div class="game-card locked" id="snakeCard" style="opacity: 1;">
+            <!-- THẺ GAME ĐÃ BỊ XÓA VỚI HIỆU ỨNG 404 -->
+            <div class="game-card dead-game" id="snakeCard">
+              <div class="badge-404">404</div>
               <div class="game-card-icon">🐍</div>
               <h3>Rắn Săn Táo</h3>
-              <p style="color: #ff3b5c; font-weight: bold; margin-top: 10px;">Đã bị xóa</p>
+              <p>Đấu trường PvP Realtime</p>
+              <p class="unlock-text" style="color: #ff3b5c;">Đã bị xóa</p>
             </div>
           </div>
         </div>
