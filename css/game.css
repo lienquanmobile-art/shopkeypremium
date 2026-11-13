@@ -72,7 +72,7 @@
   overflow: hidden;
   cursor: pointer;
   border-color: rgba(255, 59, 92, 0.5);
-  background: rgba(20, 10, 15, 0.8); /* Nền hơi ngả đỏ */
+  background: rgba(20, 10, 15, 0.8);
 }
 
 .game-card.dead-game:hover {
@@ -81,7 +81,6 @@
   transform: translateY(-2px);
 }
 
-/* 2 đường gạch chéo màu đỏ */
 .game-card.dead-game::before,
 .game-card.dead-game::after {
   content: '';
@@ -97,7 +96,6 @@
 .game-card.dead-game::before { transform: rotate(45deg); }
 .game-card.dead-game::after { transform: rotate(-45deg); }
 
-/* Chữ 404 to đùng đè lên */
 .game-card.dead-game .badge-404 {
   position: absolute;
   top: 50%;
@@ -105,13 +103,12 @@
   transform: translate(-50%, -50%);
   font-size: 65px;
   font-weight: 900;
-  color: #ff3b5c; /* Màu đỏ rực */
+  color: #ff3b5c;
   text-shadow: 0 0 20px rgba(255, 59, 92, 1), 0 0 40px rgba(255, 59, 92, 0.6);
   z-index: 10;
   pointer-events: none;
 }
 
-/* Làm mờ nhẹ nội dung bên dưới để chữ 404 nổi bật */
 .game-card.dead-game .game-card-icon,
 .game-card.dead-game h3,
 .game-card.dead-game p {
@@ -147,4 +144,38 @@
 .modal-404-box button:hover {
   background: #ff5c78;
   box-shadow: 0 0 15px rgba(255, 59, 92, 0.5);
+}
+
+/* SLOT MACHINE (VÒNG QUAY) */
+.slot-machine-container {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.slot-item {
+  flex: 1;
+  padding: 20px 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #a0aec0;
+  transition: all 0.1s;
+}
+.slot-item.active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+  transform: scale(1.05);
+}
+.slot-item.win {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+  transform: scale(1.1);
 }
