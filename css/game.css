@@ -47,15 +47,6 @@
   box-shadow: 0 10px 20px rgba(0, 229, 255, 0.1);
 }
 
-.game-card.locked {
-  opacity: 0.7;
-  cursor: pointer;
-}
-.game-card.locked:hover {
-  border-color: #ff3b5c;
-  box-shadow: 0 10px 20px rgba(255, 59, 92, 0.1);
-}
-
 .game-card-icon {
   font-size: 40px;
   margin-bottom: 15px;
@@ -73,112 +64,20 @@
   margin-bottom: 5px;
 }
 
-.game-card .unlock-text {
-  color: #00e5ff;
-  font-weight: bold;
-  margin-top: 10px;
-}
-
-/* Khu vực chơi game (Bàn chơi) */
-#gameBoard {
-  display: none;
-  text-align: center;
-}
-#gameArea {
-  position: relative;
-  margin: 0 auto;
-  background: #0d0f17;
-  border: 2px solid #2a2a44;
-  border-radius: 12px;
-  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-  display: inline-block;
-  max-width: 100%;
-  overflow-x: auto;
-}
-#gameCanvas {
-  display: block;
-  border-radius: 10px;
-  max-width: 100%;
-  height: auto;
-}
-.game-hud {
-  display: flex; justify-content: space-between; margin-bottom: 15px; font-weight: bold; font-size: 18px; max-width: 600px; margin-left: auto; margin-right: auto;
-}
-.hud-p1 { color: #ffd700; }
-.hud-p2 { color: #00ff88; }
-.hud-time { color: #ff3b5c; font-size: 20px; }
-
-/* Cài đặt trước khi chơi */
-.game-setup {
-  max-width: 400px;
-  margin: 0 auto 20px auto;
-  text-align: left;
-}
-.game-setup input {
-  width: 100%; padding: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; color: #fff; margin-bottom: 10px;
-}
-.game-setup .btn-row {
-  display: flex; gap: 10px;
-}
-
-/* PHÍM ĐIỀU HƯỚNG ẢO (CHỈ HIỆN TRÊN ĐIỆN THOẠI) */
-.mobile-controls {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-.dpad-btn {
-  width: 60px; height: 60px;
-  background: rgba(0, 229, 255, 0.1);
-  border: 1px solid #00e5ff;
-  color: #00e5ff;
-  font-size: 24px;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex; justify-content: center; align-items: center;
-  user-select: none;
-  touch-action: manipulation;
-}
-.dpad-btn:active { background: #00e5ff; color: #000; }
-
-@media (max-width: 768px) {
-  .mobile-controls { display: flex; }
-  #gameCanvas { width: 100%; height: auto; } 
-}
-
-/* Modal thông báo kết quả Game */
-.game-result-modal {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
-  display: flex; align-items: center; justify-content: center; z-index: 10005;
-}
-.game-result-box {
-  background: rgba(20, 24, 36, 0.95); border: 2px solid #00e5ff;
-  border-radius: 20px; padding: 40px; text-align: center; max-width: 400px; width: 100%;
-  box-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
-}
-.game-result-box h2 { font-size: 32px; margin-bottom: 15px; }
-.game-win { color: #00ff88; text-shadow: 0 0 15px rgba(0,255,136,0.5); }
-.game-lose { color: #ff3b5c; text-shadow: 0 0 15px rgba(255,59,92,0.5); }
-
 /* ========================================= */
-/* HIỆU ỨNG GAME BỊ KHAI TỬ (404) */
+/* HIỆU ỨNG GAME BỊ KHAI TỬ (404) - ĐỎ RỰC */
 /* ========================================= */
 .game-card.dead-game {
   position: relative;
   overflow: hidden;
   cursor: pointer;
-  opacity: 0.8;
-  filter: grayscale(100%);
-  border-color: rgba(255, 59, 92, 0.3);
+  border-color: rgba(255, 59, 92, 0.5);
+  background: rgba(20, 10, 15, 0.8); /* Nền hơi ngả đỏ */
 }
 
 .game-card.dead-game:hover {
   border-color: #ff3b5c;
-  box-shadow: 0 0 20px rgba(255, 59, 92, 0.3);
+  box-shadow: 0 0 25px rgba(255, 59, 92, 0.5);
   transform: translateY(-2px);
 }
 
@@ -192,7 +91,7 @@
   width: 140%;
   height: 4px;
   background-color: #ff3b5c;
-  box-shadow: 0 0 10px #ff3b5c;
+  box-shadow: 0 0 15px #ff3b5c;
   z-index: 5;
 }
 .game-card.dead-game::before { transform: rotate(45deg); }
@@ -206,14 +105,46 @@
   transform: translate(-50%, -50%);
   font-size: 65px;
   font-weight: 900;
-  color: rgba(255, 59, 92, 0.85);
-  text-shadow: 0 0 20px rgba(255, 59, 92, 0.8);
+  color: #ff3b5c; /* Màu đỏ rực */
+  text-shadow: 0 0 20px rgba(255, 59, 92, 1), 0 0 40px rgba(255, 59, 92, 0.6);
   z-index: 10;
   pointer-events: none;
 }
 
+/* Làm mờ nhẹ nội dung bên dưới để chữ 404 nổi bật */
 .game-card.dead-game .game-card-icon,
 .game-card.dead-game h3,
 .game-card.dead-game p {
-  opacity: 0.3;
+  opacity: 0.2;
+}
+
+/* MODAL THÔNG BÁO 404 TỰ CHẾ */
+.modal-404 {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+  display: flex; align-items: center; justify-content: center; z-index: 10005;
+}
+.modal-404-box {
+  background: rgba(20, 24, 36, 0.95); border: 2px solid #ff3b5c;
+  border-radius: 20px; padding: 30px; text-align: center; max-width: 400px; width: 90%;
+  box-shadow: 0 0 40px rgba(255, 59, 92, 0.2);
+  animation: scaleUp 0.3s ease-out;
+}
+.modal-404-box h2 {
+  color: #ff3b5c; font-size: 22px; margin-bottom: 20px; text-transform: uppercase;
+}
+.modal-404-box p {
+  font-size: 16px; color: #fff; margin-bottom: 10px; line-height: 1.5;
+}
+.modal-404-box p.error-msg {
+  color: #ff3b5c; font-weight: bold; font-size: 18px;
+}
+.modal-404-box button {
+  margin-top: 20px; width: 100%; padding: 12px;
+  background: #ff3b5c; color: #fff; border: none; border-radius: 10px;
+  font-weight: bold; cursor: pointer; transition: 0.2s;
+}
+.modal-404-box button:hover {
+  background: #ff5c78;
+  box-shadow: 0 0 15px rgba(255, 59, 92, 0.5);
 }
