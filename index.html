@@ -107,14 +107,13 @@
         <div class="history-box"><h3>Lịch sử mua hàng</h3><ul id="historyList" class="history-list"></ul></div>
       </div>
 
-      <!-- KHỐI GAME (ĐÃ KHAI TỬ) -->
+      <!-- KHỐI GAME -->
       <div id="home-game" class="home-content hidden">
         <div class="game-container">
           <div class="game-header">
             <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
           </div>
           <div class="game-grid">
-            <!-- THẺ GAME ĐÃ BỊ XÓA VỚI HIỆU ỨNG 404 -->
             <div class="game-card dead-game" id="snakeCard">
               <div class="badge-404">404</div>
               <div class="game-card-icon">🐍</div>
@@ -266,6 +265,17 @@
         Bạn đã bị cấm!...
       </p>
       <button id="okBannedBtn" class="btn-primary" style="background: #ff3b5c; box-shadow: 0 8px 20px rgba(255, 59, 92, 0.3);">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL THÔNG BÁO GAME BỊ XÓA (404) -->
+  <div id="gameDeletedModal" class="modal-404 hidden">
+    <div class="modal-404-box">
+      <h2>Thông Báo</h2>
+      <p class="error-msg">Game đã bị xóa</p>
+      <p>Vui lòng chơi game khác</p>
+      <p style="font-size: 14px; color: #a0aec0; margin-top: 15px;">Trân thành xin lỗi vì sự bất tiện này</p>
+      <button id="closeGameDeletedBtn">OK</button>
     </div>
   </div>
 
