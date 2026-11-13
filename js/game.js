@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Nút Game Rắn
+  // Xử lý 404
   document.getElementById('snakeCard')?.addEventListener('click', () => {
     document.getElementById('gameDeletedModal').classList.remove('hidden');
   });
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameDeletedModal').classList.add('hidden');
   });
 
-  // Nút Game Xúc Xắc
+  // Mở luật Vòng Quay
   document.getElementById('diceCard')?.addEventListener('click', () => {
     document.getElementById('diceRulesModal').classList.remove('hidden');
   });
@@ -27,10 +27,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('diceRulesModal').classList.add('hidden');
   });
 
+  // Bắt đầu quay (từ bảng luật)
   document.getElementById('startDiceBtn')?.addEventListener('click', async () => {
     document.getElementById('diceRulesModal').classList.add('hidden');
+    const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+    
+    if (isFree) {
+      document.getElementById('dicePlayModal').classList.remove('hidden');
+      return;
+    }
+
     const snap = await db.ref(`users/${CURRENT_USER.username}/coins`).once('value');
     const coins = snap.val() || 0;
+    
     if (coins < 30000) {
       document.getElementById('notEnoughCoinsModal').classList.remove('hidden');
     } else {
@@ -43,36 +52,56 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dicePlayModal').classList.add('hidden');
   });
 
+  // Nút QUAY NGAY
   document.getElementById('spinBtn')?.addEventListener('click', async () => {
     if (isSpinning) return;
-    const snap = await db.ref(`users/${CURRENT_USER.username}/coins`).once('value');
-    const coins = snap.val() || 0;
-    if (coins < 30000) {
-      document.getElementById('dicePlayModal').classList.add('hidden');
-      document.getElementById('notEnoughCoinsModal').classList.remove('hidden');
-      return;
+    const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+
+    if (!isFree) {
+      const snap = await db.ref(`users/${CURRENT_USER.username}/coins`).once('value');
+      const coins = snap.val() || 0;
+      if (coins < 30000) {
+        document.getElementById('dicePlayModal').classList.add('hidden');
+        document.getElementById('notEnoughCoinsModal').classList.remove('hidden');
+        return;
+      }
+      await db.ref(`users/${CURRENT_USER.username}/coins`).set(coins - 30000);
+      document.getElementById('userCoins').textContent = coins - 30000;
     }
-    await db.ref(`users/${CURRENT_USER.username}/coins`).set(coins - 30000);
-    document.getElementById('userCoins').textContent = coins - 30000;
+
     startSpin();
   });
 
+  // Bảng thông báo hết xu
   document.getElementById('closeNotEnoughBtn')?.addEventListener('click', () => {
     document.getElementById('notEnoughCoinsModal').classList.add('hidden');
   });
+  
   document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
     document.getElementById('notEnoughCoinsModal').classList.add('hidden');
     document.getElementById('exchangeCoinsModal').classList.remove('hidden');
     document.getElementById('exchangeUsername').value = CURRENT_USER.username;
+    document.getElementById('exchangeErrorMsg').textContent = '';
+    document.getElementById('exchangeAmount').value = '';
   });
+
   document.getElementById('closeExchangeBtn')?.addEventListener('click', () => {
     document.getElementById('exchangeCoinsModal').classList.add('hidden');
   });
 
+  // Xử lý ĐỔI XU
   document.getElementById('confirmExchangeBtn')?.addEventListener('click', async () => {
-    const vnd = parseInt(document.getElementById('exchangeAmount').value);
-    if (!vnd || vnd < 1000) return alert('Số tiền tối thiểu là 1.000VND');
+    const errorMsg = document.getElementById('exchangeErrorMsg');
+    errorMsg.textContent = ''; 
 
+    const vnd = parseInt(document.getElementById('exchangeAmount').value);
+    if (!vnd || vnd < 1000) {
+      errorMsg.textContent = 'Số tiền tối thiểu là 1.000 VND!';
+      return;
+    }
+
+    const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+    
     let coinsToAdd = 0;
     if (vnd >= 500000) coinsToAdd = Math.floor(vnd / 500000) * 7500000;
     else if (vnd >= 200000) coinsToAdd = Math.floor(vnd / 200000) * 3000000;
@@ -86,19 +115,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
     const u = userSnap.val();
     
-    if (u.balance < vnd) return alert('Số dư VND không đủ!');
+    if (!isFree && u.balance < vnd) {
+      errorMsg.textContent = 'Số dư VND không đủ!';
+      return;
+    }
 
     const updates = {};
-    updates['balance'] = u.balance - vnd;
+    if (!isFree) {
+      updates['balance'] = u.balance - vnd;
+    }
     updates['coins'] = (u.coins || 0) + coinsToAdd;
     
     await db.ref(`users/${CURRENT_USER.username}`).update(updates);
     writeLog(CURRENT_USER.username, 'EXCHANGE_COINS', `Đổi ${vnd} VND lấy ${coinsToAdd} xu`);
     
-    alert(`Đổi thành công ${coinsToAdd} xu!`);
-    document.getElementById('exchangeCoinsModal').classList.add('hidden');
-    document.getElementById('exchangeAmount').value = '';
-    loadGameData();
+    errorMsg.style.color = '#00ff88';
+    errorMsg.textContent = `Đổi thành công ${coinsToAdd.toLocaleString('vi-VN')} xu!`;
+    
+    setTimeout(() => {
+      document.getElementById('exchangeCoinsModal').classList.add('hidden');
+      document.getElementById('exchangeAmount').value = '';
+      errorMsg.textContent = '';
+      errorMsg.style.color = '#ff3b5c';
+      loadGameData();
+    }, 1500);
   });
 });
 
@@ -109,6 +149,7 @@ async function loadGameData() {
   document.getElementById('userCoins').textContent = u.coins || 0;
 }
 
+// HÀM QUAY
 function startSpin() {
   isSpinning = true;
   const spinBtn = document.getElementById('spinBtn');
@@ -156,6 +197,7 @@ function startSpin() {
   animateSpin();
 }
 
+// HÀM CỘNG THƯỞNG
 async function giveReward(index) {
   const userRef = db.ref(`users/${CURRENT_USER.username}`);
   const snap = await userRef.once('value');
