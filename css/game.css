@@ -163,3 +163,46 @@
 .game-result-box h2 { font-size: 32px; margin-bottom: 15px; }
 .game-win { color: #00ff88; text-shadow: 0 0 15px rgba(0,255,136,0.5); }
 .game-lose { color: #ff3b5c; text-shadow: 0 0 15px rgba(255,59,92,0.5); }
+/* Hiệu ứng Game bị khai tử (404) */
+.game-card.dead-game {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  opacity: 0.8;
+  filter: grayscale(100%);
+}
+
+.game-card.dead-game:hover {
+  border-color: #ff3b5c;
+  box-shadow: 0 0 20px rgba(255, 59, 92, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 2 đường gạch chéo */
+.game-card.dead-game::before,
+.game-card.dead-game::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -20%;
+  width: 140%;
+  height: 4px;
+  background-color: #ff3b5c;
+  box-shadow: 0 0 10px #ff3b5c;
+}
+.game-card.dead-game::before { transform: rotate(45deg); }
+.game-card.dead-game::after { transform: rotate(-45deg); }
+
+/* Chữ 404 to đùng */
+.game-card.dead-game .badge-404 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 60px;
+  font-weight: 900;
+  color: rgba(255, 59, 92, 0.9);
+  text-shadow: 0 0 20px rgba(255, 59, 92, 0.5);
+  z-index: 10;
+  pointer-events: none;
+}
