@@ -163,22 +163,26 @@
 .game-result-box h2 { font-size: 32px; margin-bottom: 15px; }
 .game-win { color: #00ff88; text-shadow: 0 0 15px rgba(0,255,136,0.5); }
 .game-lose { color: #ff3b5c; text-shadow: 0 0 15px rgba(255,59,92,0.5); }
-/* Hiệu ứng Game bị khai tử (404) */
+
+/* ========================================= */
+/* HIỆU ỨNG GAME BỊ KHAI TỬ (404) */
+/* ========================================= */
 .game-card.dead-game {
   position: relative;
   overflow: hidden;
   cursor: pointer;
   opacity: 0.8;
   filter: grayscale(100%);
+  border-color: rgba(255, 59, 92, 0.3);
 }
 
 .game-card.dead-game:hover {
   border-color: #ff3b5c;
-  box-shadow: 0 0 20px rgba(255, 59, 92, 0.2);
+  box-shadow: 0 0 20px rgba(255, 59, 92, 0.3);
   transform: translateY(-2px);
 }
 
-/* 2 đường gạch chéo */
+/* 2 đường gạch chéo màu đỏ */
 .game-card.dead-game::before,
 .game-card.dead-game::after {
   content: '';
@@ -189,20 +193,27 @@
   height: 4px;
   background-color: #ff3b5c;
   box-shadow: 0 0 10px #ff3b5c;
+  z-index: 5;
 }
 .game-card.dead-game::before { transform: rotate(45deg); }
 .game-card.dead-game::after { transform: rotate(-45deg); }
 
-/* Chữ 404 to đùng */
+/* Chữ 404 to đùng đè lên */
 .game-card.dead-game .badge-404 {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 60px;
+  font-size: 65px;
   font-weight: 900;
-  color: rgba(255, 59, 92, 0.9);
-  text-shadow: 0 0 20px rgba(255, 59, 92, 0.5);
+  color: rgba(255, 59, 92, 0.85);
+  text-shadow: 0 0 20px rgba(255, 59, 92, 0.8);
   z-index: 10;
   pointer-events: none;
+}
+
+.game-card.dead-game .game-card-icon,
+.game-card.dead-game h3,
+.game-card.dead-game p {
+  opacity: 0.3;
 }
