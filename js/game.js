@@ -140,6 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
       loadGameData();
     }, 1500);
   });
+
+  // Đóng bảng chúc mừng
+  document.getElementById('closeCongratsBtn')?.addEventListener('click', () => {
+    document.getElementById('congratsModal').classList.add('hidden');
+    isSpinning = false;
+    document.getElementById('spinBtn').disabled = false;
+    document.getElementById('spinBtn').textContent = 'QUAY NGAY';
+    loadGameData();
+    document.querySelectorAll('.slot-item').forEach(el => el.classList.remove('win', 'active'));
+  });
 });
 
 async function loadGameData() {
@@ -197,7 +207,7 @@ function startSpin() {
   animateSpin();
 }
 
-// HÀM CỘNG THƯỞNG
+// HÀM CỘNG THƯỞNG VÀ BẮN PHÁO HOA
 async function giveReward(index) {
   const userRef = db.ref(`users/${CURRENT_USER.username}`);
   const snap = await userRef.once('value');
@@ -236,12 +246,17 @@ async function giveReward(index) {
   await userRef.update(updates);
   writeLog(CURRENT_USER.username, 'SPIN_LUCKY', `Quay trúng: ${rewardText}`);
 
+  // Hiệu ứng pháo hoa
+  confetti({
+    particleCount: 150,
+    spread: 80,
+    origin: { y: 0.6 },
+    colors: ['#ffd700', '#00e5ff', '#ff3b5c', '#ffffff']
+  });
+
+  // Hiển thị bảng chúc mừng
   setTimeout(() => {
-    alert(`Chúc mừng! Bạn đã trúng: ${rewardText}`);
-    isSpinning = false;
-    document.getElementById('spinBtn').disabled = false;
-    document.getElementById('spinBtn').textContent = 'QUAY NGAY';
-    loadGameData();
-    document.getElementById('slot-'+index).classList.remove('win');
-  }, 1000);
+    document.getElementById('congratsReward').textContent = rewardText;
+    document.getElementById('congratsModal').classList.remove('hidden');
+  }, 500);
 }
