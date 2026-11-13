@@ -179,3 +179,28 @@
   box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
   transform: scale(1.1);
 }
+
+/* CSS CHO BẢNG ĐỔI XU */
+#exchangeCoinsModal label {
+  display: block;
+  color: #a0aec0;
+  font-size: 14px;
+  margin: 15px 0 5px;
+}
+#exchangeCoinsModal input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+}
+#exchangeCoinsModal input:focus {
+  border-color: #00e5ff;
+}
+#exchangeCoinsModal input[readonly] {
+  background: rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+}
