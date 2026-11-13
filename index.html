@@ -112,8 +112,19 @@
         <div class="game-container">
           <div class="game-header">
             <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
+            <div class="coin-display">Số xu: <span id="userCoins">0</span></div>
           </div>
+          
           <div class="game-grid">
+            <!-- Ô VUÔNG GAME XÚC XẮC -->
+            <div class="game-card locked" id="diceCard">
+              <div class="game-card-icon">🎲</div>
+              <h3>Vòng Quay May Mắn</h3>
+              <p>Thử vận may trúng VND</p>
+              <p class="unlock-text" style="color: #00e5ff;">Click để xem luật</p>
+            </div>
+
+            <!-- Ô 404 RẮN SĂN TÁO -->
             <div class="game-card dead-game" id="snakeCard">
               <div class="badge-404">404</div>
               <div class="game-card-icon">🐍</div>
@@ -276,6 +287,85 @@
       <p>Vui lòng chơi game khác</p>
       <p style="font-size: 14px; color: #a0aec0; margin-top: 15px;">Trân thành xin lỗi vì sự bất tiện này</p>
       <button id="closeGameDeletedBtn">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL 1: LUẬT CHƠI VÒNG QUAY -->
+  <div id="diceRulesModal" class="modal-overlay hidden">
+    <div class="modal-content" style="border-color: #ff3b5c; text-align: left; max-width: 500px;">
+      <h3 class="modal-title" style="color: #ff3b5c; text-align: center;">Lưu ý</h3>
+      <div style="font-size: 14px; color: #e2e8f0; line-height: 1.6; margin-bottom: 20px;">
+        <p>- Mỗi lượt quay là <b>30.000 xu</b> (13/11/2026 - 7/12/2026)</p>
+        <p>- Số xu không đủ có thể dùng tiền để mua xu hoặc chơi game kiếm xu</p>
+        <p>- Tỉ lệ ra 1.000.000VND tiền thật/ảo là <b>0,0001%</b></p>
+        <p>- Tỉ lệ ra 5.000VND tiền thật/ảo là <b>0,1%</b></p>
+        <p>- Tỉ lệ ra random 1.000VND - 20.000VND là <b>1%</b> (thật/ảo)</p>
+        <p>- Tỉ lệ ra 10.000.000 xu là <b>0,01%</b></p>
+        <p>- Tỉ lệ ra 10.000 xu là <b>83%</b></p>
+        <p>- Tỉ lệ ra random 100.000 xu - 10.000.000 xu là <b>5%</b></p>
+        <p style="color: #ffd700; margin-top: 10px;">Note: Tỉ lệ ra tiền VND thật là <b>0,712%</b></p>
+      </div>
+      <button id="startDiceBtn" class="btn-primary">Bắt đầu quay</button>
+      <button id="closeRulesBtn" class="btn-secondary" style="width: 100%;">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL 2: BÀN QUAY (SLOT MACHINE) -->
+  <div id="dicePlayModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 800px; padding: 20px;">
+      <h3 class="modal-title" style="color: #00e5ff; margin-bottom: 10px;">Vòng Quay May Mắn</h3>
+      <p style="color: #a0aec0; margin-bottom: 20px;">Chi phí: 30.000 xu / lượt</p>
+      
+      <div class="slot-machine-container">
+        <div class="slot-item" id="slot-0">10K xu</div>
+        <div class="slot-item" id="slot-1">10M xu</div>
+        <div class="slot-item" id="slot-2">1M VND</div>
+        <div class="slot-item" id="slot-3">5K VND</div>
+        <div class="slot-item" id="slot-4">1K-2K VND</div>
+        <div class="slot-item" id="slot-5">100K-10M xu</div>
+      </div>
+
+      <button id="spinBtn" class="btn-primary" style="margin-top: 30px; font-size: 20px;">QUAY NGAY</button>
+      <button id="closePlayBtn" class="btn-secondary" style="width: 100%;">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL 3: KHÔNG ĐỦ XU -->
+  <div id="notEnoughCoinsModal" class="modal-overlay hidden" style="z-index: 10005;">
+    <div class="modal-content" style="border-color: #ff3b5c;">
+      <h3 class="modal-title" style="color: #ff3b5c;">Không đủ xu!</h3>
+      <p class="modal-desc">Bạn có muốn mua thêm không?</p>
+      <div style="display:flex; gap: 10px;">
+        <button id="closeNotEnoughBtn" class="btn-secondary" style="flex:1;">Đóng</button>
+        <button id="buyCoinsBtn" class="btn-primary" style="flex:1;">Có</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: BẢNG GIÁ ĐỔI XU -->
+  <div id="exchangeCoinsModal" class="modal-overlay hidden" style="z-index: 10006;">
+    <div class="modal-content" style="max-width: 450px; text-align: left;">
+      <h3 class="modal-title" style="text-align: center;">Bảng Giá Quy Đổi Xu</h3>
+      <label>Tài khoản:</label>
+      <input type="text" id="exchangeUsername" readonly style="background: rgba(255,255,255,0.1);" />
+      <label>Số tiền (VND):</label>
+      <input type="number" id="exchangeAmount" placeholder="Nhập số tiền..." />
+      
+      <div style="font-size: 13px; color: #a0aec0; margin: 15px 0; line-height: 1.6;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr;">
+          <div>1.000VND</div><div style="color:#ffd700">10.000 xu</div>
+          <div>5.000VND</div><div style="color:#ffd700">60.000 xu</div>
+          <div>10.000VND</div><div style="color:#ffd700">120.000 xu</div>
+          <div>20.000VND</div><div style="color:#ffd700">250.000 xu</div>
+          <div>50.000VND</div><div style="color:#ffd700">625.000 xu</div>
+          <div>100.000VND</div><div style="color:#ffd700">1.400.000 xu</div>
+          <div>200.000VND</div><div style="color:#ffd700">3.000.000 xu</div>
+          <div>500.000VND</div><div style="color:#ffd700">7.500.000 xu</div>
+        </div>
+      </div>
+
+      <button id="confirmExchangeBtn" class="btn-primary">Đổi</button>
+      <button id="closeExchangeBtn" class="btn-secondary" style="width:100%">Đóng</button>
     </div>
   </div>
 
