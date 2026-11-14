@@ -76,7 +76,7 @@ function enterApp(user) {
   
   updateBalanceDisplay(user.balance || 0);
   document.getElementById('balanceBox').style.display = 'inline-block';
-  document.getElementById('hcoinValue').textContent = user.hcoin || 0;
+  document.getElementById('scoinValue').textContent = user.scoin || 0;
   document.getElementById('coinBox').style.display = 'inline-block';
 
   if (user.role === 'OWNER' || user.role === 'ADMIN') {
@@ -95,7 +95,7 @@ function enterApp(user) {
     const u = snap.val();
     if (!u) return;
     updateBalanceDisplay(u.balance || 0);
-    document.getElementById('hcoinValue').textContent = u.hcoin || 0;
+    document.getElementById('scoinValue').textContent = u.scoin || 0;
     if (u.banUntil && u.banUntil > Date.now()) {
       showBannedModal(u.banUntil, u.banReason);
     }
