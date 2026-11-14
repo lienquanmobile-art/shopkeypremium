@@ -73,8 +73,11 @@ function enterApp(user) {
   document.getElementById('userNameLabel').textContent = user.username;
   document.getElementById('roleBadge').textContent = user.role;
   document.getElementById('userBox').style.display = 'flex';
+  
   updateBalanceDisplay(user.balance || 0);
   document.getElementById('balanceBox').style.display = 'inline-block';
+  document.getElementById('hcoinValue').textContent = user.hcoin || 0;
+  document.getElementById('coinBox').style.display = 'inline-block';
 
   if (user.role === 'OWNER' || user.role === 'ADMIN') {
     document.getElementById('adminNavBtn').classList.remove('hidden');
@@ -92,6 +95,7 @@ function enterApp(user) {
     const u = snap.val();
     if (!u) return;
     updateBalanceDisplay(u.balance || 0);
+    document.getElementById('hcoinValue').textContent = u.hcoin || 0;
     if (u.banUntil && u.banUntil > Date.now()) {
       showBannedModal(u.banUntil, u.banReason);
     }
@@ -131,6 +135,7 @@ function bindHomeUI() {
       document.getElementById('home-deposit').classList.toggle('hidden', target !== 'deposit');
       document.getElementById('home-history').classList.toggle('hidden', target !== 'history');
       document.getElementById('home-game').classList.toggle('hidden', target !== 'game');
+      document.getElementById('home-earn').classList.toggle('hidden', target !== 'earn');
       if (target === 'history') loadHistory();
     });
   });
@@ -227,15 +232,67 @@ async function handleBuyBypass() {
 
   if (balance < cost) return flash(msg, `Số dư không đủ (cần ${formatMoney(cost)}đ, hiện có ${formatMoney(balance)}đ)`);
 
+  const linkSnap = await db.ref('config/targetLink').once('value');
+  const targetLink = linkSnap.val();
+  if (!targetLink) return flash(msg, 'Hệ thống chưa cấu hình link, vui lòng báo Admin!');
+
+  const token = 'TOKEN_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  await db.ref(`bypass_tokens/${token}`).set({
+    username: CURRENT_USER.username,
+    targetLink: targetLink,
+    createdAt: Date.now(),
+    status: 'pending'
+  });
+
   const updates = {};
   if (!isFree) updates[`users/${CURRENT_USER.username}/balance`] = balance - cost;
+  updates[`purchases/${CURRENT_USER.username}/${Date.now()}`] = {
+    package: 'bypass', packageName: 'Gói Vượt Link', price: cost, key: 'Đang chờ vượt link...', note: isFree ? 'Miễn phí (Admin/Owner)' : 'Mua thường'
+  };
   await db.ref().update(updates);
 
-  await writeLog(CURRENT_USER.username, 'BUY_BYPASS', isFree ? `Lấy link FREE (Vượt Link)` : `Mua Vượt Link (500đ)`);
-  msg.textContent = ''; 
-  document.getElementById('modalBypassValue').textContent = 'https://pre.hnmod.top/s/get-adr-v3';
-  document.getElementById('bypassModal').classList.remove('hidden');
+  // LINK GIẢ LẬP
+  const fakeShortenedUrl = `https://link4m.co/st?token=${token}`;
+  
+  document.getElementById('shortenedLink').href = fakeShortenedUrl;
+  document.getElementById('shortenedLink').textContent = fakeShortenedUrl;
+  document.getElementById('shortLinkModal').classList.remove('hidden');
+  
+  document.getElementById('verifyShortLinkBtn').onclick = async () => {
+    document.getElementById('verifyShortLinkBtn').disabled = true;
+    document.getElementById('verifyShortLinkBtn').textContent = 'Đang kiểm tra...';
+    
+    const tokenRef = db.ref(`bypass_tokens/${token}`);
+    const tSnap = await tokenRef.once('value');
+    const tData = tSnap.val();
+    
+    await tokenRef.update({ status: 'completed' });
+    
+    document.getElementById('realLinkValue').textContent = tData.targetLink;
+    document.getElementById('shortLinkModal').classList.add('hidden');
+    document.getElementById('realLinkModal').classList.remove('hidden');
+    
+    document.getElementById('verifyShortLinkBtn').disabled = false;
+    document.getElementById('verifyShortLinkBtn').textContent = 'Tôi đã vượt qua';
+    writeLog(CURRENT_USER.username, 'BUY_BYPASS', `Vượt link thành công, nhận link gốc`);
+    loadHistory();
+  };
 }
+
+document.getElementById('copyRealLinkBtn')?.addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('realLinkValue').textContent);
+  const btn = document.getElementById('copyRealLinkBtn');
+  btn.textContent = 'Đã chép!';
+  setTimeout(() => { btn.textContent = 'Sao chép'; }, 2000);
+});
+
+document.getElementById('closeRealLinkBtn')?.addEventListener('click', () => {
+  document.getElementById('realLinkModal').classList.add('hidden');
+});
+
+document.getElementById('closeShortLinkBtn')?.addEventListener('click', () => {
+  document.getElementById('shortLinkModal').classList.add('hidden');
+});
 
 async function loadHistory() {
   const list = document.getElementById('historyList');
