@@ -17,9 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     msg.style.color = '#ffd700';
     msg.textContent = 'Đang kiểm tra...';
 
-    // Lấy ngày hôm nay (định dạng YYYY-MM-DD)
     const today = new Date().toISOString().split('T')[0];
-
     const userRef = db.ref(`users/${CURRENT_USER.username}`);
     const snap = await userRef.once('value');
     const u = snap.val();
@@ -43,9 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Chọn link 1 hay link 2 dựa vào số lần đã vượt hôm nay
-    const currentLink = doneToday === 0 ? config.link1 : config.link2;
+    // Lấy link gốc từ Admin
+    const baseLink = doneToday === 0 ? config.link1 : config.link2;
 
+    // Tạo Token
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     await db.ref(`bypass_tokens/${token}`).set({
       username: CURRENT_USER.username,
@@ -53,13 +52,16 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
-    // Điều hướng qua trang trung gian
-    document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
+    // TẠO LINK CUỐI CÙNG: (Link của Admin) + (Token)
+    // Lưu ý: Link4m sẽ giữ nguyên tham số ?token=... khi chuyển hướng về callback.html
+    const finalLink = `${baseLink}?token=${token}`;
+
+    // Hiển thị nút bấm đi tới Link4m
+    document.getElementById('verifyLinkBtn').href = finalLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
 
-    localStorage.setItem('link4m_target', currentLink);
-
+    // Lắng nghe trạng thái token
     const tokenRef = db.ref(`bypass_tokens/${token}`);
     const tokenListener = tokenRef.on('value', async (tSnap) => {
       const tData = tSnap.val();
@@ -71,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newCount = doneToday + 1;
         const updates = {};
         updates['scoin'] = (u.scoin || 0) + 500;
-        updates[`earnCount/${today}`] = newCount; // Lưu theo ngày
+        updates[`earnCount/${today}`] = newCount; 
         await userRef.update(updates);
 
         document.getElementById('waitingVerifyModal').classList.add('hidden');
