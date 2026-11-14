@@ -10,11 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ================= LOGIC KIẾM HCOIN QUA LINK4M =================
+  // ================= LOGIC KIẾM SCOIN QUA LINK4M =================
   document.getElementById('link4mCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     const msg = document.getElementById('earnMsg');
-    msg.textContent = '';
+    msg.style.color = '#ffd700';
+    msg.textContent = 'Đang tạo link, vui lòng đợi...';
 
     const today = new Date().toISOString().split('T')[0];
     const userRef = db.ref(`users/${CURRENT_USER.username}`);
@@ -36,40 +37,57 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
-    // Trỏ đến trang redirect.html (Trang này sẽ đá sang Link4m)
-    document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
-    document.getElementById('waitingVerifyModal').classList.remove('hidden');
+    // LINK GOOGLE APPS SCRIPT CỦA BẠN ĐÃ ĐƯỢC DÁN VÀO ĐÂY
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhRPNaw-M6M0TBTQ9v6gzZwD4HCrp37JEMkNGaMSZyTKuOBqTFj-m1sirrt9e9wc9O/exec"; 
+    const apiUrl = `${APPS_SCRIPT_URL}?token=${token}`;
 
-    // Lắng nghe xem trang callback.html có báo về không
-    const tokenRef = db.ref(`bypass_tokens/${token}`);
-    const tokenListener = tokenRef.on('value', async (tSnap) => {
-      const tData = tSnap.val();
-      if (tData && tData.status === 'completed') {
-        tokenRef.off('value', tokenListener);
-        await tokenRef.remove();
-        
-        // Cộng 500 Hcoin
-        const newCount = (earnCount[today] || 0) + 1;
-        const updates = {};
-        updates['hcoin'] = (u.hcoin || 0) + 500;
-        updates[`earnCount/${today}`] = newCount;
-        await userRef.update(updates);
+    try {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
 
-        document.getElementById('waitingVerifyModal').classList.add('hidden');
-        msg.style.color = '#00ff88';
-        msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Hcoin.';
-        document.getElementById('hcoinValue').textContent = (u.hcoin || 0) + 500;
+      if (data.status === 'success') {
+        const shortUrl = data.shortenedUrl;
         
-        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        document.getElementById('verifyLinkBtn').href = shortUrl;
+        document.getElementById('waitingVerifyModal').classList.remove('hidden');
+        msg.textContent = '';
+
+        const tokenRef = db.ref(`bypass_tokens/${token}`);
+        const tokenListener = tokenRef.on('value', async (tSnap) => {
+          const tData = tSnap.val();
+          if (tData && tData.status === 'completed') {
+            tokenRef.off('value', tokenListener);
+            await tokenRef.remove();
+            
+            const newCount = (earnCount[today] || 0) + 1;
+            const updates = {};
+            updates['scoin'] = (u.scoin || 0) + 500;
+            updates[`earnCount/${today}`] = newCount;
+            await userRef.update(updates);
+
+            document.getElementById('waitingVerifyModal').classList.add('hidden');
+            msg.style.color = '#00ff88';
+            msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Scoin.';
+            document.getElementById('scoinValue').textContent = (u.scoin || 0) + 500;
+            
+            if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+          }
+        });
+
+        document.getElementById('closeWaitBtn').onclick = () => {
+          tokenRef.off('value', tokenListener);
+          document.getElementById('waitingVerifyModal').classList.add('hidden');
+          msg.style.color = '#ff3b5c';
+          msg.textContent = 'Bạn đã hủy quá trình vượt link.';
+        };
+      } else {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Lỗi tạo link: ' + (data.message || 'Vui lòng thử lại!');
       }
-    });
-
-    document.getElementById('closeWaitBtn').onclick = () => {
-      tokenRef.off('value', tokenListener);
-      document.getElementById('waitingVerifyModal').classList.add('hidden');
+    } catch (err) {
       msg.style.color = '#ff3b5c';
-      msg.textContent = 'Bạn đã hủy quá trình vượt link.';
-    };
+      msg.textContent = 'Lỗi kết nối Server. Vui lòng báo Admin!';
+    }
   });
 
   // CÁC SỰ KIỆN CŨ GIỮ NGUYÊN
