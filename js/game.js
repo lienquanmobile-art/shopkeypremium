@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const snap = await userRef.once('value');
     const u = snap.val();
     
-    // Lấy link từ Admin cấu hình
     const configSnap = await db.ref('config/earnLinks').once('value');
     const config = configSnap.val();
     if (!config || !config.link1 || !config.link2) {
@@ -32,64 +31,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const earnCount = u.earnCount || {};
-    const doneToday = earnCount[today] || 0; // Đếm số lần đã vượt trong NGÀY HÔM NAY
+    const doneToday = earnCount[today] || 0;
 
-    // Nếu hôm nay đã vượt đủ 2 lần thì chặn
     if (doneToday >= 2) {
       msg.style.color = '#ff3b5c';
       msg.textContent = 'Bạn đã đạt giới hạn 2 lần/ngày. Vui lòng quay lại vào ngày mai!';
       return;
     }
 
-    // Lấy link gốc từ Admin
+    // Lấy link gốc (Link 1 hoặc Link 2)
     const baseLink = doneToday === 0 ? config.link1 : config.link2;
 
-    // Tạo Token
-    const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-    await db.ref(`bypass_tokens/${token}`).set({
-      username: CURRENT_USER.username,
-      status: 'pending',
-      createdAt: Date.now()
-    });
+    // Gắn thẳng Username vào link để callback đọc được
+    const finalLink = `${baseLink}?user=${CURRENT_USER.username}`;
 
-    // TẠO LINK CUỐI CÙNG: (Link của Admin) + (Token)
-    // Lưu ý: Link4m sẽ giữ nguyên tham số ?token=... khi chuyển hướng về callback.html
-    const finalLink = `${baseLink}?token=${token}`;
-
-    // Hiển thị nút bấm đi tới Link4m
     document.getElementById('verifyLinkBtn').href = finalLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
 
-    // Lắng nghe trạng thái token
-    const tokenRef = db.ref(`bypass_tokens/${token}`);
-    const tokenListener = tokenRef.on('value', async (tSnap) => {
-      const tData = tSnap.val();
-      if (tData && tData.status === 'completed') {
-        tokenRef.off('value', tokenListener);
-        await tokenRef.remove();
-        
-        // Cộng Scoin và lưu số lần vượt theo NGÀY
-        const newCount = doneToday + 1;
-        const updates = {};
-        updates['scoin'] = (u.scoin || 0) + 500;
-        updates[`earnCount/${today}`] = newCount; 
-        await userRef.update(updates);
+    // Vì không dùng Token, chúng ta sẽ kiểm tra User có thay đổi Scoin chưa
+    const initialScoin = u.scoin || 0;
 
+    const userListener = userRef.on('value', async (uSnap) => {
+      const newU = uSnap.val();
+      // Nếu số Scoin tăng lên (do callback.html cộng) -> Hiện thông báo
+      if (newU && newU.scoin > initialScoin) {
+        userRef.off('value', userListener); // Ngắt lắng nghe
+        
         document.getElementById('waitingVerifyModal').classList.add('hidden');
         msg.style.color = '#00ff88';
         msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Scoin.';
-        document.getElementById('scoinValue').textContent = (u.scoin || 0) + 500;
+        document.getElementById('scoinValue').textContent = newU.scoin;
         
         if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
-        // Load lại để cập nhật chữ 0/2
         loadGameData();
       }
     });
 
     document.getElementById('closeWaitBtn').onclick = () => {
-      tokenRef.off('value', tokenListener);
+      userRef.off('value', userListener);
       document.getElementById('waitingVerifyModal').classList.add('hidden');
       msg.style.color = '#ff3b5c';
       msg.textContent = 'Bạn đã hủy quá trình vượt link.';
