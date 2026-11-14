@@ -47,9 +47,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // SỰ KIỆN ĐÓNG BÀN QUAY (Đã thay alert bằng Modal)
   document.getElementById('closePlayBtn')?.addEventListener('click', () => {
-    if (isSpinning) return alert('Đang quay, không thể thoát!');
+    if (isSpinning) {
+      document.getElementById('spinningWarningModal').classList.remove('hidden');
+      return;
+    }
     document.getElementById('dicePlayModal').classList.add('hidden');
+  });
+
+  // Đóng bảng cảnh báo đang quay
+  document.getElementById('closeSpinningWarningBtn')?.addEventListener('click', () => {
+    document.getElementById('spinningWarningModal').classList.add('hidden');
   });
 
   // Nút QUAY NGAY
@@ -247,12 +256,14 @@ async function giveReward(index) {
   writeLog(CURRENT_USER.username, 'SPIN_LUCKY', `Quay trúng: ${rewardText}`);
 
   // Hiệu ứng pháo hoa
-  confetti({
-    particleCount: 150,
-    spread: 80,
-    origin: { y: 0.6 },
-    colors: ['#ffd700', '#00e5ff', '#ff3b5c', '#ffffff']
-  });
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#ffd700', '#00e5ff', '#ff3b5c', '#ffffff']
+    });
+  }
 
   // Hiển thị bảng chúc mừng
   setTimeout(() => {
