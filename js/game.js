@@ -39,27 +39,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Tạo Token ngẫu nhiên
-    const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-    
-    // LƯU TOKEN VÀ USERNAME VÀO LOCALSTORAGE ĐỂ CALLBACK ĐỌC
-    localStorage.setItem('bypass_token', token);
-    localStorage.setItem('bypass_user', CURRENT_USER.username);
-
     // Lấy link gốc (Link 1 hoặc Link 2)
     const baseLink = doneToday === 0 ? config.link1 : config.link2;
-    
-    // Hiển thị link
+
+    // Mở link Link4m trực tiếp (không truyền token, vì checklog.html sẽ tự xác thực)
     document.getElementById('verifyLinkBtn').href = baseLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
 
-    // Lắng nghe sự thay đổi số Scoin để cập nhật giao diện
+    // Lắng nghe sự thay đổi Scoin (vì checklog.html sẽ cộng trực tiếp lên Firebase)
     const initialScoin = u.scoin || 0;
 
     const userListener = userRef.on('value', async (uSnap) => {
       const newU = uSnap.val();
-      // Nếu số Scoin tăng lên (do callback.html cộng) -> Hiện thông báo
+      // Nếu số Scoin tăng lên -> Hiện thông báo thành công
       if (newU && newU.scoin > initialScoin) {
         userRef.off('value', userListener); // Ngắt lắng nghe
         
@@ -70,10 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
-        // Xóa dữ liệu tạm
-        localStorage.removeItem('bypass_token');
-        localStorage.removeItem('bypass_user');
-
         loadGameData();
       }
     });
@@ -83,9 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('waitingVerifyModal').classList.add('hidden');
       msg.style.color = '#ff3b5c';
       msg.textContent = 'Bạn đã hủy quá trình vượt link.';
-      
-      localStorage.removeItem('bypass_token');
-      localStorage.removeItem('bypass_user');
     };
   });
 
