@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Tạo Token
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     await db.ref(`bypass_tokens/${token}`).set({
       username: CURRENT_USER.username,
