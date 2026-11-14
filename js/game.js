@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!CURRENT_USER) return;
     const msg = document.getElementById('earnMsg');
     msg.style.color = '#ffd700';
-    msg.textContent = 'Đang tạo link, vui lòng đợi...';
+    msg.textContent = 'Đang kiểm tra...';
 
     const today = new Date().toISOString().split('T')[0];
     const userRef = db.ref(`users/${CURRENT_USER.username}`);
@@ -23,13 +23,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const u = snap.val();
     
     const earnCount = u.earnCount || {};
-    if (earnCount[today] >= 2) {
+    const doneToday = earnCount[today] || 0;
+
+    if (doneToday >= 2) {
       msg.style.color = '#ff3b5c';
       msg.textContent = 'Bạn đã đạt giới hạn 2 lần/ngày. Vui lòng quay lại vào ngày mai!';
       return;
     }
 
-    // Tạo Token
+    // Lấy link từ Admin cấu hình
+    const configSnap = await db.ref('config/earnLinks').once('value');
+    const config = configSnap.val();
+    if (!config || !config.link1 || !config.link2) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Admin chưa cấu hình link, vui lòng thử lại sau!';
+      return;
+    }
+
+    // Xác định dùng link 1 hay link 2
+    const currentLink = doneToday === 0 ? config.link1 : config.link2;
+
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     await db.ref(`bypass_tokens/${token}`).set({
       username: CURRENT_USER.username,
@@ -37,57 +50,42 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
-    // LINK GOOGLE APPS SCRIPT MỚI CỦA BẠN ĐÃ ĐƯỢC DÁN VÀO ĐÂY
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8nokxrKrH0m6O-oMMGfPwBYpKlguQrDy-fQps1x3i5Vy6WrC4pVUD3phfocpysUGK/exec"; 
-    const apiUrl = `${APPS_SCRIPT_URL}?token=${token}`;
+    // Điều hướng qua trang trung gian (redirect.html)
+    document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
+    document.getElementById('waitingVerifyModal').classList.remove('hidden');
+    msg.textContent = '';
 
-    try {
-      const res = await fetch(apiUrl);
-      const data = await res.json();
+    // Lưu link vào localStorage để redirect.html lấy
+    localStorage.setItem('link4m_target', currentLink);
 
-      if (data.status === 'success') {
-        const shortUrl = data.shortenedUrl;
+    const tokenRef = db.ref(`bypass_tokens/${token}`);
+    const tokenListener = tokenRef.on('value', async (tSnap) => {
+      const tData = tSnap.val();
+      if (tData && tData.status === 'completed') {
+        tokenRef.off('value', tokenListener);
+        await tokenRef.remove();
         
-        document.getElementById('verifyLinkBtn').href = shortUrl;
-        document.getElementById('waitingVerifyModal').classList.remove('hidden');
-        msg.textContent = '';
+        const newCount = doneToday + 1;
+        const updates = {};
+        updates['scoin'] = (u.scoin || 0) + 500;
+        updates[`earnCount/${today}`] = newCount;
+        await userRef.update(updates);
 
-        const tokenRef = db.ref(`bypass_tokens/${token}`);
-        const tokenListener = tokenRef.on('value', async (tSnap) => {
-          const tData = tSnap.val();
-          if (tData && tData.status === 'completed') {
-            tokenRef.off('value', tokenListener);
-            await tokenRef.remove();
-            
-            const newCount = (earnCount[today] || 0) + 1;
-            const updates = {};
-            updates['scoin'] = (u.scoin || 0) + 500;
-            updates[`earnCount/${today}`] = newCount;
-            await userRef.update(updates);
-
-            document.getElementById('waitingVerifyModal').classList.add('hidden');
-            msg.style.color = '#00ff88';
-            msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Scoin.';
-            document.getElementById('scoinValue').textContent = (u.scoin || 0) + 500;
-            
-            if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-          }
-        });
-
-        document.getElementById('closeWaitBtn').onclick = () => {
-          tokenRef.off('value', tokenListener);
-          document.getElementById('waitingVerifyModal').classList.add('hidden');
-          msg.style.color = '#ff3b5c';
-          msg.textContent = 'Bạn đã hủy quá trình vượt link.';
-        };
-      } else {
-        msg.style.color = '#ff3b5c';
-        msg.textContent = 'Lỗi tạo link: ' + (data.message || 'Vui lòng thử lại!');
+        document.getElementById('waitingVerifyModal').classList.add('hidden');
+        msg.style.color = '#00ff88';
+        msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Scoin.';
+        document.getElementById('scoinValue').textContent = (u.scoin || 0) + 500;
+        
+        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       }
-    } catch (err) {
+    });
+
+    document.getElementById('closeWaitBtn').onclick = () => {
+      tokenRef.off('value', tokenListener);
+      document.getElementById('waitingVerifyModal').classList.add('hidden');
       msg.style.color = '#ff3b5c';
-      msg.textContent = 'Lỗi kết nối Server. Vui lòng báo Admin!';
-    }
+      msg.textContent = 'Bạn đã hủy quá trình vượt link.';
+    };
   });
 
   // CÁC SỰ KIỆN CŨ GIỮ NGUYÊN
@@ -297,6 +295,24 @@ async function loadGameData() {
   const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
   const u = snap.val();
   document.getElementById('userCoins').textContent = u.coins || 0;
+
+  // Cập nhật chữ 0/2 ở tab Kiếm Tiền
+  const today = new Date().toISOString().split('T')[0];
+  const earnCount = u.earnCount || {};
+  const done = earnCount[today] || 0;
+  const progressEl = document.getElementById('earnProgress');
+  if (progressEl) progressEl.textContent = `${done}/2`;
+
+  const link4mStatus = document.getElementById('link4mStatusText');
+  if (link4mStatus) {
+    if (done >= 2) {
+      link4mStatus.textContent = 'Hết lượt hôm nay';
+      link4mStatus.style.color = '#ff3b5c';
+    } else {
+      link4mStatus.textContent = 'Nhấn để vượt link';
+      link4mStatus.style.color = '#00e5ff';
+    }
+  }
 }
 
 function startSpin() {
