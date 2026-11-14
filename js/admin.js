@@ -11,22 +11,21 @@ window.initAdminPage = function (user) {
   bindKeyTabs();
   bindDenomButtons();
   bindBanLogic();
-  
-  // Bind logic cho Tạo Thẻ
   bindCardLogic();
+  bindLinkConfigLogic(); // Thêm logic gắn link
 };
 
 window.refreshAdminData = function() {
   loadBalanceUserOptions();
   loadLogs();
   loadUserTable();
-  loadCardList(); // Load danh sách thẻ
+  loadCardList();
+  loadLinkConfig();
   const packs = ['1d', '3d', '7d', '30d'];
   packs.forEach(pack => renderKeyList(pack, `keyList${pack}`));
 };
 
 function bindAdminTabs() {
-  // Tab Lớn
   document.querySelectorAll('.admin-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
@@ -39,10 +38,10 @@ function bindAdminTabs() {
       if (target === 'balance') loadBalanceUserOptions();
       if (target === 'list') loadUserTable();
       if (target === 'cards') loadCardList();
+      if (target === 'linkconfig') loadLinkConfig(); // Load khi mở tab
     });
   });
 
-  // Tab Con (Sub-tabs)
   document.querySelectorAll('.sub-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
@@ -56,7 +55,41 @@ function bindAdminTabs() {
   });
 }
 
-// ================== QUẢN LÝ THẺ NẠP (DÀNH CHO ADMIN/OWNER) ==================
+// ================== CẤU HÌNH LINK (MỚI) ==================
+function bindLinkConfigLogic() {
+  document.getElementById('saveLinkConfigBtn')?.addEventListener('click', async () => {
+    const link1 = document.getElementById('configLink1').value.trim();
+    const link2 = document.getElementById('configLink2').value.trim();
+    const msg = document.getElementById('configLinkMsg');
+
+    if (!link1 || !link2) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Vui lòng nhập đủ 2 link!';
+      return;
+    }
+
+    await db.ref('config/earnLinks').set({
+      link1: link1,
+      link2: link2,
+      updatedAt: Date.now()
+    });
+
+    msg.style.color = '#00ff88';
+    msg.textContent = 'Đã lưu cấu hình link thành công!';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  });
+}
+
+async function loadLinkConfig() {
+  const snap = await db.ref('config/earnLinks').once('value');
+  const data = snap.val();
+  if (data) {
+    document.getElementById('configLink1').value = data.link1 || '';
+    document.getElementById('configLink2').value = data.link2 || '';
+  }
+}
+
+// ================== QUẢN LÝ THẺ (GIỮ NGUYÊN) ==================
 function generateCardCode() {
   let code = '';
   for(let i=0; i<16; i++) code += Math.floor(Math.random() * 10);
@@ -84,8 +117,6 @@ function bindCardLogic() {
     if (expDate < Date.now()) return msg.textContent = 'Hạn sử dụng phải ở tương lai!';
 
     const code = generateCardCode();
-    
-    // Kiểm tra trùng
     const checkSnap = await db.ref(`cards/${code}`).once('value');
     if (checkSnap.exists()) {
       msg.textContent = 'Lỗi trùng mã thẻ, vui lòng bấm tạo lại!';
@@ -119,16 +150,14 @@ function loadCardList() {
     const cards = Object.values(data);
     const now = Date.now();
 
-    // Lọc bỏ thẻ cũ (đã dùng hoặc hết hạn quá 7 ngày)
     cards.forEach(c => {
       if ((c.status === 'used' || c.status === 'expired') && c.usedAt) {
         if (now - c.usedAt > 7 * 24 * 60 * 60 * 1000) {
-          db.ref(`cards/${c.code}`).remove(); // Tự động xóa
+          db.ref(`cards/${c.code}`).remove();
         }
       }
     });
 
-    // Sắp xếp: unused -> used -> expired
     cards.sort((a, b) => {
       const scoreA = a.status === 'unused' ? 1 : (a.status === 'used' ? 2 : 3);
       const scoreB = b.status === 'unused' ? 1 : (b.status === 'used' ? 2 : 3);
@@ -185,7 +214,7 @@ function bindCreateAccount() {
     if (checkSnap.exists()) return flash(msg, 'Tên đăng nhập đã tồn tại');
 
     const privateKey = generatePrivateKey(type);
-    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, coins: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
+    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, coins: 0, scoin: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
     await writeLog(CURRENT_USER.username, 'CREATE_ACCOUNT', `Tạo tài khoản ${type}: ${username}`);
 
     document.getElementById('resType').textContent = type;
@@ -303,7 +332,7 @@ function loadLogs() {
       const li = document.createElement('li');
       const t = new Date(log.time).toLocaleString('vi-VN');
       let colorStyle = '';
-      if (log.action === 'BUY_BYPASS') colorStyle = 'color: #ff3b5c; font-weight: bold; border: 1px solid rgba(255, 59, 92, 0.3); background: rgba(255, 59, 92, 0.1); border-radius: 8px; padding: 0 6px;';
+      if (log.action === 'BUY_BYPASS') colorStyle = 'color: #ff3b5c; font-weight: bold;';
       if (log.action === 'BAN_ACCOUNT') colorStyle = 'color: #ff3b5c; font-weight: bold;';
       if (log.action === 'CREATE_CARD') colorStyle = 'color: #00e5ff;';
       if (log.action === 'REDEEM_CARD') colorStyle = 'color: #00ff88;';
