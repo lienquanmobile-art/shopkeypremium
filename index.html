@@ -44,6 +44,9 @@
       <div class="balance-box" id="balanceBox" style="display:none;">
         💰 <span id="balanceValue">0</span> VND
       </div>
+      <div class="balance-box" id="coinBox" style="display:none; margin-left: 10px; border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.1);">
+        🪙 <span id="hcoinValue">0</span> Hcoin
+      </div>
       <div class="user-box" id="userBox" style="display:none;">
         <span id="userNameLabel"></span>
         <span class="role-badge" id="roleBadge"></span>
@@ -66,6 +69,7 @@
         <button class="home-tab" data-home="deposit">Nạp tiền</button>
         <button class="home-tab" data-home="history">Lịch sử mua hàng</button>
         <button class="home-tab" data-home="game">Game</button>
+        <button class="home-tab" data-home="earn">Kiếm Tiền</button>
       </div>
 
       <div id="home-buykey" class="home-content">
@@ -115,7 +119,6 @@
             <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
             <div class="coin-display">
               Số xu: <span id="userCoins">0</span>
-              <!-- NÚT DẤU CỘNG NẠP THẺ -->
               <button id="openCardModalBtn" style="background: #00e5ff; color: #000; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; font-size: 18px; line-height: 24px; cursor: pointer; margin-left: 5px; padding: 0;">+</button>
             </div>
           </div>
@@ -137,6 +140,23 @@
           </div>
         </div>
       </div>
+
+      <!-- KHỐI KIẾM TIỀN -->
+      <div id="home-earn" class="home-content hidden">
+        <div class="game-container" style="text-align: center;">
+          <h3 style="color: #ffd700; margin-bottom: 20px; font-size: 24px;">Kiếm Hcoin Miễn Phí</h3>
+          <p style="color: #a0aec0; margin-bottom: 30px;">Vượt link để nhận <b style="color:#ffd700">500 Hcoin</b> (Tối đa 2 lần/ngày)</p>
+          
+          <div style="display: flex; justify-content: center; gap: 20px;">
+            <div class="package-card" style="max-width: 300px; cursor: pointer; border-color: rgba(255, 215, 0, 0.3); background: linear-gradient(180deg, rgba(20, 24, 36, 0.8), rgba(255, 215, 0, 0.05));" id="link4mCard">
+              <h3 style="color: #ffd700;">Link4m</h3>
+              <p style="color: #00e5ff; margin-top: 10px;">Nhấn để vượt link</p>
+            </div>
+          </div>
+          
+          <p id="earnMsg" style="margin-top: 20px; font-weight: bold; font-size: 16px;"></p>
+        </div>
+      </div>
     </section>
 
     <!-- ===== PAGE: ADMIN ===== -->
@@ -148,10 +168,7 @@
         <button class="admin-tab" data-admin="key3d">Key 3 ngày</button>
         <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
         <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
-        
-        <!-- TAB LỚN: QUẢN LÝ THẺ -->
         <button class="admin-tab owner-only" data-admin="cards">Quản lý thẻ</button>
-        
         <button class="admin-tab owner-only" data-admin="list">Danh sách tài khoản</button>
         <button class="admin-tab owner-only" data-admin="log">Log</button>
       </div>
@@ -192,15 +209,11 @@
       <div id="admin-key7d" class="admin-content hidden"><h3>Key 7 ngày</h3><input type="text" id="keyInput7d" placeholder="Thêm key của bạn" /><button id="addKey7d" class="btn-primary">+ Thêm</button><ul id="keyList7d" class="key-list"></ul></div>
       <div id="admin-key30d" class="admin-content hidden"><h3>Key 30 ngày</h3><input type="text" id="keyInput30d" placeholder="Thêm key của bạn" /><button id="addKey30d" class="btn-primary">+ Thêm</button><ul id="keyList30d" class="key-list"></ul></div>
       
-      <!-- KHU VỰC QUẢN LÝ THẺ (TAB LỚN) -->
       <div id="admin-cards" class="admin-content hidden">
-        <!-- 2 Tab con -->
         <div class="sub-tabs">
           <button class="sub-tab active" data-sub="createcard">Tạo thẻ</button>
           <button class="sub-tab" data-sub="listcard">Thẻ đã tạo</button>
         </div>
-
-        <!-- Tab con 1: Tạo thẻ -->
         <div id="sub-createcard" class="sub-content">
           <h3>Tạo thẻ nạp xu</h3>
           <label>Mệnh giá (VND)</label>
@@ -215,24 +228,18 @@
             <button class="denom card-preset" data-amount="200000">200.000VND</button>
             <button class="denom card-preset" data-amount="500000">500.000VND</button>
           </div>
-
           <label>Hạn sử dụng thẻ</label>
           <div style="display:flex; gap:10px;">
             <input type="number" id="cardExpDay" placeholder="Ngày" min="1" max="31" style="flex:1;" />
             <input type="number" id="cardExpMonth" placeholder="Tháng" min="1" max="12" style="flex:1;" />
             <input type="number" id="cardExpYear" placeholder="Năm" min="2024" style="flex:1;" />
           </div>
-
           <button id="createCardBtn" class="btn-primary" style="margin-top: 20px;">Tạo</button>
           <p id="createCardMsg" class="msg"></p>
         </div>
-
-        <!-- Tab con 2: Thẻ đã tạo -->
         <div id="sub-listcard" class="sub-content hidden">
           <h3>Danh sách thẻ đã tạo</h3>
-          <div id="cardListContainer" style="max-height: 500px; overflow-y: auto; padding-right: 5px;">
-            <!-- Danh sách thẻ load bằng JS -->
-          </div>
+          <div id="cardListContainer" style="max-height: 500px; overflow-y: auto; padding-right: 5px;"></div>
         </div>
       </div>
 
@@ -240,9 +247,7 @@
         <h3>Danh sách tài khoản</h3>
         <div class="table-responsive">
           <table class="user-table">
-            <thead>
-              <tr><th>Tài khoản</th><th>Số dư</th><th>Trạng thái</th><th>Hành động</th></tr>
-            </thead>
+            <thead><tr><th>Tài khoản</th><th>Số dư</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
             <tbody id="userTableBody"></tbody>
           </table>
         </div>
@@ -252,7 +257,7 @@
     </section>
   </main>
 
-  <!-- MODAL THANH TOÁN MUA KEY -->
+  <!-- CÁC MODAL CŨ -->
   <div id="successModal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="modal-title">Thanh toán thành công!</h3>
@@ -263,7 +268,6 @@
     </div>
   </div>
 
-  <!-- MODAL THANH TOÁN VƯỢT LINK -->
   <div id="bypassModal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #ff3b5c; box-shadow: 0 10px 40px rgba(255, 59, 92, 0.2);">
       <h3 class="modal-title" style="color: #ff3b5c;">Thanh toán thành công!</h3>
@@ -274,14 +278,11 @@
     </div>
   </div>
 
-  <!-- MODAL CẤM TÀI KHOẢN -->
   <div id="banModal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #ff3b5c; max-width: 500px; text-align: left;">
       <h3 class="modal-title" style="color: #ff3b5c; text-align: center;">Cấm Tài Khoản</h3>
-      
       <label>Tài khoản:</label>
       <input type="text" id="banUsername" readonly style="background: rgba(255,255,255,0.1); cursor: not-allowed;" />
-      
       <label>Thời gian cấm:</label>
       <div class="ban-time-inputs">
         <input type="number" id="banYears" placeholder="Năm" min="0" />
@@ -300,7 +301,6 @@
         <button class="denom ban-preset" data-time="10y">10 năm</button>
         <button class="denom ban-preset" data-time="100y">100 năm</button>
       </div>
-
       <label>Lý do cấm:</label>
       <select id="banReasonSelect" style="margin-bottom: 10px;">
         <option value="custom">-- Tự nhập lý do --</option>
@@ -310,7 +310,6 @@
         <option value="Hệ thống phát hiện bạn dùng phần mềm thứ 3 can thiệp web và sever">Dùng phần mềm thứ 3 (Khóa 3 năm)</option>
       </select>
       <input type="text" id="banReasonInput" placeholder="Nhập lý do chi tiết..." />
-
       <div style="display:flex; gap: 10px; margin-top: 20px;">
         <button id="confirmBanBtn" class="btn-primary" style="background: #ff3b5c; box-shadow: 0 8px 20px rgba(255, 59, 92, 0.3);">Cấm</button>
         <button id="cancelBanBtn" class="btn-secondary" style="flex: 1;">Hủy</button>
@@ -318,18 +317,14 @@
     </div>
   </div>
 
-  <!-- MODAL THÔNG BÁO BỊ CẤM -->
   <div id="bannedNoticeModal" class="modal-overlay hidden" style="z-index: 10001;">
     <div class="modal-content" style="border-color: #ff3b5c; text-align: left;">
       <h3 class="modal-title" style="color: #ff3b5c; text-align: center; margin-bottom: 20px; font-size: 24px; text-transform: uppercase; letter-spacing: 2px;">Lưu ý</h3>
-      <p style="font-size: 16px; line-height: 1.6; color: #fff; text-align: center; margin-bottom: 24px;" id="bannedMessage">
-        Bạn đã bị cấm!...
-      </p>
+      <p style="font-size: 16px; line-height: 1.6; color: #fff; text-align: center; margin-bottom: 24px;" id="bannedMessage">Bạn đã bị cấm!...</p>
       <button id="okBannedBtn" class="btn-primary" style="background: #ff3b5c; box-shadow: 0 8px 20px rgba(255, 59, 92, 0.3);">OK</button>
     </div>
   </div>
 
-  <!-- MODAL THÔNG BÁO GAME BỊ XÓA (404) -->
   <div id="gameDeletedModal" class="modal-404 hidden">
     <div class="modal-404-box">
       <h2>Thông Báo</h2>
@@ -340,16 +335,15 @@
     </div>
   </div>
 
-  <!-- MODAL 1: LUẬT CHƠI VÒNG QUAY -->
   <div id="diceRulesModal" class="modal-overlay hidden">
     <div class="modal-content" style="border-color: #ff3b5c; text-align: left; max-width: 500px;">
       <h3 class="modal-title" style="color: #ff3b5c; text-align: center;">Lưu ý</h3>
       <div style="font-size: 14px; color: #e2e8f0; line-height: 1.6; margin-bottom: 20px;">
-        <p>- Mỗi lượt quay là <b>30.000 xu</b> (13/11/2026 - 7/12/2026)</p>
+        <p>- Mỗi lượt quay là <b>30.000 xu</b></p>
         <p>- Số xu không đủ có thể dùng tiền để mua xu hoặc chơi game kiếm xu</p>
         <p>- Tỉ lệ ra 1.000.000VND tiền thật/ảo là <b>0,0001%</b></p>
         <p>- Tỉ lệ ra 5.000VND tiền thật/ảo là <b>0,1%</b></p>
-        <p>- Tỉ lệ ra random 1.000VND - 20.000VND là <b>1%</b> (thật/ảo)</p>
+        <p>- Tỉ lệ ra random 1.000VND - 20.000VND là <b>1%</b></p>
         <p>- Tỉ lệ ra 10.000.000 xu là <b>0,01%</b></p>
         <p>- Tỉ lệ ra 10.000 xu là <b>83%</b></p>
         <p>- Tỉ lệ ra random 100.000 xu - 10.000.000 xu là <b>5%</b></p>
@@ -360,12 +354,10 @@
     </div>
   </div>
 
-  <!-- MODAL 2: BÀN QUAY (SLOT MACHINE) -->
   <div id="dicePlayModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 800px; padding: 20px;">
       <h3 class="modal-title" style="color: #00e5ff; margin-bottom: 10px;">Vòng Quay May Mắn</h3>
       <p style="color: #a0aec0; margin-bottom: 20px;">Chi phí: 30.000 xu / lượt</p>
-      
       <div class="slot-machine-container">
         <div class="slot-item" id="slot-0">10K xu</div>
         <div class="slot-item" id="slot-1">10M xu</div>
@@ -374,13 +366,11 @@
         <div class="slot-item" id="slot-4">1K-2K VND</div>
         <div class="slot-item" id="slot-5">100K-10M xu</div>
       </div>
-
       <button id="spinBtn" class="btn-primary" style="margin-top: 30px; font-size: 20px;">QUAY NGAY</button>
       <button id="closePlayBtn" class="btn-secondary" style="width: 100%;">Đóng</button>
     </div>
   </div>
 
-  <!-- MODAL 3: KHÔNG ĐỦ XU -->
   <div id="notEnoughCoinsModal" class="modal-overlay hidden" style="z-index: 10005;">
     <div class="modal-content" style="border-color: #ff3b5c;">
       <h3 class="modal-title" style="color: #ff3b5c;">Không đủ xu!</h3>
@@ -392,7 +382,6 @@
     </div>
   </div>
 
-  <!-- MODAL 4: BẢNG GIÁ ĐỔI XU -->
   <div id="exchangeCoinsModal" class="modal-overlay hidden" style="z-index: 10006;">
     <div class="modal-content" style="max-width: 450px; text-align: left;">
       <h3 class="modal-title" style="text-align: center;">Bảng Giá Quy Đổi Xu</h3>
@@ -400,7 +389,6 @@
       <input type="text" id="exchangeUsername" readonly style="background: rgba(255,255,255,0.1);" />
       <label>Số tiền (VND):</label>
       <input type="number" id="exchangeAmount" placeholder="Nhập số tiền..." />
-      
       <div style="font-size: 13px; color: #a0aec0; margin: 15px 0; line-height: 1.6;">
         <div style="display:grid; grid-template-columns: 1fr 1fr;">
           <div>1.000VND</div><div style="color:#ffd700">10.000 xu</div>
@@ -413,59 +401,56 @@
           <div>500.000VND</div><div style="color:#ffd700">7.500.000 xu</div>
         </div>
       </div>
-
       <p id="exchangeErrorMsg" style="color: #ff3b5c; font-size: 14px; font-weight: bold; text-align: center; margin-top: 10px; margin-bottom: 5px;"></p>
-
       <button id="confirmExchangeBtn" class="btn-primary" style="margin-top: 10px;">Đổi</button>
       <button id="closeExchangeBtn" class="btn-secondary" style="width:100%">Đóng</button>
     </div>
   </div>
 
-  <!-- MODAL 5: CHÚC MỪNG TRÚNG THƯỞNG -->
   <div id="congratsModal" class="modal-overlay hidden" style="z-index: 10010;">
     <div class="modal-content" style="border-color: #ffd700; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4); text-align: center;">
       <h2 style="color: #ffd700; font-size: 28px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);">CHÚC MỪNG!</h2>
       <p style="color: #a0aec0; font-size: 16px; margin-bottom: 20px;">Bạn đã nhận được:</p>
-      
       <div style="background: rgba(255, 215, 0, 0.1); border: 2px dashed #ffd700; border-radius: 15px; padding: 20px; margin-bottom: 25px;">
         <span id="congratsReward" style="color: #fff; font-size: 24px; font-weight: bold;">10.000 xu</span>
       </div>
-
       <button id="closeCongratsBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000;">TUYỆT VỜI</button>
     </div>
   </div>
 
-  <!-- MODAL 6: CẢNH BÁO ĐANG QUAY -->
   <div id="spinningWarningModal" class="modal-overlay hidden" style="z-index: 10010;">
     <div class="modal-content" style="border-color: #ffd700; box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); text-align: center;">
       <h3 class="modal-title" style="color: #ffd700;">Chú ý!</h3>
-      <p style="color: #e2e8f0; font-size: 16px; margin-bottom: 20px;">
-        Vòng quay đang chạy, vui lòng đợi!
-      </p>
+      <p style="color: #e2e8f0; font-size: 16px; margin-bottom: 20px;">Vòng quay đang chạy, vui lòng đợi!</p>
       <button id="closeSpinningWarningBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000;">Đã hiểu</button>
     </div>
   </div>
 
-  <!-- MODAL 7: NẠP THẺ -->
   <div id="redeemCardModal" class="modal-overlay hidden" style="z-index: 10010;">
     <div class="modal-content" style="border-color: #00e5ff; box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); text-align: center;">
       <h3 class="modal-title" style="color: #00e5ff; margin-bottom: 20px;">Mã Thẻ</h3>
-      
       <input type="text" id="redeemCardInput" placeholder="Nhập mã thẻ 16 số..." maxlength="16" style="width: 100%; padding: 15px; font-size: 20px; text-align: center; background: rgba(0,0,0,0.5); border: 2px solid #00e5ff; border-radius: 10px; color: #fff; margin-bottom: 20px; outline: none; letter-spacing: 2px;" />
-      
       <p id="redeemCardMsg" style="height: 20px; font-size: 14px; font-weight: bold; margin-bottom: 15px;"></p>
-
       <button id="submitRedeemBtn" class="btn-primary">Nạp</button>
       <button id="closeRedeemBtn" class="btn-secondary" style="width:100%">Đóng</button>
     </div>
   </div>
 
-  <!-- MODAL 8: THÔNG BÁO CHUNG -->
   <div id="generalNoticeModal" class="modal-overlay hidden" style="z-index: 10015;">
     <div class="modal-content" style="border-color: #00e5ff; text-align: center;">
       <h3 id="noticeTitle" class="modal-title" style="color: #00e5ff;">Thông báo</h3>
       <p id="noticeText" style="color: #e2e8f0; font-size: 16px; margin-bottom: 20px;"></p>
       <button id="closeNoticeBtn" class="btn-primary">OK</button>
+    </div>
+  </div>
+
+  <!-- MODAL CHỜ XÁC THỰC VƯỢT LINK MỚI -->
+  <div id="waitingVerifyModal" class="modal-overlay hidden" style="z-index: 10020;">
+    <div class="modal-content" style="border-color: #ffd700; text-align: center;">
+      <h3 class="modal-title" style="color: #ffd700;">Đang chờ xác thực...</h3>
+      <p style="color: #fff; margin-bottom: 20px;">Hãy bấm vào link bên dưới, vượt qua quảng cáo. Hệ thống sẽ tự động cộng Hcoin cho bạn.</p>
+      <a id="verifyLinkBtn" href="#" target="_blank" class="btn-primary" style="display: block; text-decoration: none; background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000; margin-bottom: 15px;">Đi tới Link4m</a>
+      <button id="closeWaitBtn" class="btn-secondary" style="width:100%">Hủy</button>
     </div>
   </div>
 
