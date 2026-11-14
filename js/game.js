@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Tạo Token
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     await db.ref(`bypass_tokens/${token}`).set({
       username: CURRENT_USER.username,
@@ -36,8 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
-    // LINK GOOGLE APPS SCRIPT CỦA BẠN ĐÃ ĐƯỢC DÁN VÀO ĐÂY
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhRPNaw-M6M0TBTQ9v6gzZwD4HCrp37JEMkNGaMSZyTKuOBqTFj-m1sirrt9e9wc9O/exec"; 
+    // LINK GOOGLE APPS SCRIPT MỚI CỦA BẠN ĐÃ ĐƯỢC DÁN VÀO ĐÂY
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8nokxrKrH0m6O-oMMGfPwBYpKlguQrDy-fQps1x3i5Vy6WrC4pVUD3phfocpysUGK/exec"; 
     const apiUrl = `${APPS_SCRIPT_URL}?token=${token}`;
 
     try {
