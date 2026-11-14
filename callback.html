@@ -34,12 +34,11 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Lấy Username từ URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const username = urlParams.get('user');
+    // LẤY DỮ LIỆU TỪ LOCALSTORAGE (Đã lưu ở game.js)
+    const token = localStorage.getItem('bypass_token');
+    const username = localStorage.getItem('bypass_user');
 
-    if (username) {
-      // Cộng 500 Scoin và tăng lượt đếm cho ngày hôm nay
+    if (token && username) {
       const today = new Date().toISOString().split('T')[0];
       const userRef = db.ref(`users/${username}`);
       
@@ -65,6 +64,10 @@
           document.getElementById('subText').textContent = "Bạn có thể quay lại web để nhận thưởng.";
           document.getElementById('loader').style.display = 'none';
 
+          // Xóa dữ liệu tạm sau khi xong
+          localStorage.removeItem('bypass_token');
+          localStorage.removeItem('bypass_user');
+
           setTimeout(() => {
             window.location.href = 'index.html';
           }, 2000);
@@ -76,7 +79,7 @@
       });
     } else {
       document.getElementById('statusText').textContent = "Lỗi!";
-      document.getElementById('subText').textContent = "Không tìm thấy thông tin tài khoản.";
+      document.getElementById('subText').textContent = "Không tìm thấy mã xác thực.";
       document.getElementById('loader').style.display = 'none';
     }
   </script>
