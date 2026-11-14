@@ -34,8 +34,9 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Lấy token từ localStorage (đã lưu ở redirect.html)
-    const token = localStorage.getItem('bypass_token');
+    // Lấy token trực tiếp từ URL (do Google Apps Script sinh ra)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
 
     if (token) {
       db.ref(`bypass_tokens/${token}`).update({ status: 'completed' }).then(() => {
@@ -43,7 +44,6 @@
         document.getElementById('subText').textContent = "Bạn có thể quay lại web để nhận thưởng.";
         document.getElementById('loader').style.display = 'none';
         
-        localStorage.removeItem('bypass_token');
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 2000);
