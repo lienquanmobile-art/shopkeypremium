@@ -44,7 +44,6 @@
       <div class="balance-box" id="balanceBox" style="display:none;">
         💰 <span id="balanceValue">0</span> VND
       </div>
-      <!-- HỘP SCOIN -->
       <div class="balance-box" id="coinBox" style="display:none; margin-left: 10px; border-color: #ffd700; color: #ffd700; background: rgba(255, 215, 0, 0.1);">
         🪙 <span id="scoinValue">0</span> Scoin
       </div>
@@ -145,13 +144,14 @@
       <!-- KHỐI KIẾM TIỀN -->
       <div id="home-earn" class="home-content hidden">
         <div class="game-container" style="text-align: center;">
-          <h3 style="color: #ffd700; margin-bottom: 20px; font-size: 24px;">Kiếm Scoin Miễn Phí</h3>
-          <p style="color: #a0aec0; margin-bottom: 30px;">Vượt link để nhận <b style="color:#ffd700">500 Scoin</b> (Tối đa 2 lần/ngày)</p>
+          <h3 style="color: #ffd700; margin-bottom: 10px; font-size: 24px;">Kiếm Scoin Miễn Phí</h3>
+          <p style="color: #a0aec0; margin-bottom: 10px;">Vượt link để nhận <b style="color:#ffd700">500 Scoin</b></p>
+          <p style="color: #00e5ff; margin-bottom: 30px; font-weight: bold;">Đã vượt: <span id="earnProgress">0/2</span></p>
           
           <div style="display: flex; justify-content: center; gap: 20px;">
             <div class="package-card" style="max-width: 300px; cursor: pointer; border-color: rgba(255, 215, 0, 0.3); background: linear-gradient(180deg, rgba(20, 24, 36, 0.8), rgba(255, 215, 0, 0.05));" id="link4mCard">
               <h3 style="color: #ffd700;">Link4m</h3>
-              <p style="color: #00e5ff; margin-top: 10px;">Nhấn để vượt link</p>
+              <p style="color: #00e5ff; margin-top: 10px;" id="link4mStatusText">Nhấn để vượt link</p>
             </div>
           </div>
           
@@ -170,6 +170,7 @@
         <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
         <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
         <button class="admin-tab owner-only" data-admin="cards">Quản lý thẻ</button>
+        <button class="admin-tab owner-only" data-admin="linkconfig">Gắn Link</button> <!-- TAB MỚI -->
         <button class="admin-tab owner-only" data-admin="list">Danh sách tài khoản</button>
         <button class="admin-tab owner-only" data-admin="log">Log</button>
       </div>
@@ -244,6 +245,18 @@
         </div>
       </div>
 
+      <!-- KHU VỰC GẮN LINK (MỚI) -->
+      <div id="admin-linkconfig" class="admin-content hidden">
+        <h3>Cấu hình Link Vượt</h3>
+        <p style="color:#a0aec0; font-size:14px; margin-bottom:20px;">Mỗi ngày, bạn hãy dán 2 link rút gọn Link4m khác nhau vào đây. Khi user vượt hết 2 link, họ sẽ phải đợi bạn cập nhật link mới để vượt tiếp.</p>
+        <label>Link 1 (Dành cho lượt 1)</label>
+        <input type="text" id="configLink1" placeholder="https://link4m.co/..." />
+        <label>Link 2 (Dành cho lượt 2)</label>
+        <input type="text" id="configLink2" placeholder="https://link4m.co/..." />
+        <button id="saveLinkConfigBtn" class="btn-primary" style="margin-top: 20px;">Lưu cấu hình</button>
+        <p id="configLinkMsg" class="msg"></p>
+      </div>
+
       <div id="admin-list" class="admin-content hidden">
         <h3>Danh sách tài khoản</h3>
         <div class="table-responsive">
@@ -258,7 +271,7 @@
     </section>
   </main>
 
-  <!-- CÁC MODAL CŨ -->
+  <!-- CÁC MODAL CŨ GIỮ NGUYÊN -->
   <div id="successModal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="modal-title">Thanh toán thành công!</h3>
