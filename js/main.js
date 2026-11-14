@@ -251,7 +251,6 @@ async function handleBuyBypass() {
   };
   await db.ref().update(updates);
 
-  // LINK GIẢ LẬP
   const fakeShortenedUrl = `https://link4m.co/st?token=${token}`;
   
   document.getElementById('shortenedLink').href = fakeShortenedUrl;
