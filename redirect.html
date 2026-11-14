@@ -16,24 +16,6 @@
     <h2>Đang chuyển hướng đến Link4m...</h2>
     <p>Vui lòng đợi!</p>
   </div>
-
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    
-    if (token) {
-      // Lưu token vào localStorage để callback có thể lấy lại
-      localStorage.setItem('bypass_token', token);
-      
-      // Link4m thật của bạn
-      const LINK4M_URL = "https://link4m.org/8K8u1L"; 
-      
-      setTimeout(() => {
-        window.location.href = LINK4M_URL;
-      }, 1000);
-    } else {
-      window.location.href = 'index.html';
-    }
-  </script>
+  <script src="js/redirect.js"></script>
 </body>
 </html>
