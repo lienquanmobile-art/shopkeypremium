@@ -34,19 +34,41 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Lấy token trực tiếp từ URL (đã được gắn ở trang game.js)
+    // Lấy Username từ URL
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    const username = urlParams.get('user');
 
-    if (token) {
-      db.ref(`bypass_tokens/${token}`).update({ status: 'completed' }).then(() => {
-        document.getElementById('statusText').textContent = "Xác thực thành công!";
-        document.getElementById('subText').textContent = "Bạn có thể quay lại web để nhận thưởng.";
-        document.getElementById('loader').style.display = 'none';
+    if (username) {
+      // Cộng 500 Scoin và tăng lượt đếm cho ngày hôm nay
+      const today = new Date().toISOString().split('T')[0];
+      const userRef = db.ref(`users/${username}`);
+      
+      userRef.once('value').then(snap => {
+        if (!snap.exists()) {
+           document.getElementById('statusText').textContent = "Lỗi!";
+           document.getElementById('subText').textContent = "Tài khoản không tồn tại.";
+           document.getElementById('loader').style.display = 'none';
+           return;
+        }
         
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2000);
+        const u = snap.val();
+        const currentScoin = u.scoin || 0;
+        const earnCount = u.earnCount || {};
+        const doneToday = earnCount[today] || 0;
+
+        const updates = {};
+        updates['scoin'] = currentScoin + 500;
+        updates[`earnCount/${today}`] = doneToday + 1;
+
+        userRef.update(updates).then(() => {
+          document.getElementById('statusText').textContent = "Xác thực thành công!";
+          document.getElementById('subText').textContent = "Bạn có thể quay lại web để nhận thưởng.";
+          document.getElementById('loader').style.display = 'none';
+
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 2000);
+        });
       }).catch(err => {
         document.getElementById('statusText').textContent = "Lỗi xác thực!";
         document.getElementById('subText').textContent = "Vui lòng liên hệ Admin.";
@@ -54,7 +76,7 @@
       });
     } else {
       document.getElementById('statusText').textContent = "Lỗi!";
-      document.getElementById('subText').textContent = "Không tìm thấy mã xác thực.";
+      document.getElementById('subText').textContent = "Không tìm thấy thông tin tài khoản.";
       document.getElementById('loader').style.display = 'none';
     }
   </script>
