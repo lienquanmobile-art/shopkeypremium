@@ -22,11 +22,11 @@
     const token = urlParams.get('token');
     
     if (token) {
-      // Lưu token vào localStorage để callback có thể lấy lại nếu cần
+      // Lưu token vào localStorage để callback có thể lấy lại
       localStorage.setItem('bypass_token', token);
       
-      // Link4m thật của bạn (Thay bằng link rút gọn bạn đã tạo trên Link4m)
-      const LINK4M_URL = "https://link4m.co/st/abcxyz"; 
+      // Link4m thật của bạn
+      const LINK4M_URL = "https://link4m.org/8K8u1L"; 
       
       setTimeout(() => {
         window.location.href = LINK4M_URL;
