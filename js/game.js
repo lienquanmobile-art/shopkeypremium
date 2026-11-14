@@ -10,7 +10,69 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Xử lý 404
+  // LOGIC KIẾM HCOIN QUA LINK4M
+  document.getElementById('link4mCard')?.addEventListener('click', async () => {
+    if (!CURRENT_USER) return;
+    const msg = document.getElementById('earnMsg');
+    msg.textContent = '';
+
+    // THAY LINK NÀY BẰNG LINK RÚT GỌN THẬT CỦA BẠN
+    const LINK4M_TARGET = 'https://shopblackkeypremium.web.app/callback.html'; // Đổi thành link web thật của bạn
+    const YOUR_LINK4M_URL = "https://link4m.co/st/abcxyz"; // Thay link rút gọn của bạn vào đây
+
+    const today = new Date().toISOString().split('T')[0];
+    const userRef = db.ref(`users/${CURRENT_USER.username}`);
+    const snap = await userRef.once('value');
+    const u = snap.val();
+    
+    const earnCount = u.earnCount || {};
+    if (earnCount[today] >= 2) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Bạn đã đạt giới hạn 2 lần/ngày. Vui lòng quay lại vào ngày mai!';
+      return;
+    }
+
+    const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    await db.ref(`bypass_tokens/${token}`).set({
+      username: CURRENT_USER.username,
+      status: 'pending',
+      createdAt: Date.now()
+    });
+
+    document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
+    document.getElementById('waitingVerifyModal').classList.remove('hidden');
+
+    const tokenRef = db.ref(`bypass_tokens/${token}`);
+    const tokenListener = tokenRef.on('value', async (tSnap) => {
+      const tData = tSnap.val();
+      if (tData && tData.status === 'completed') {
+        tokenRef.off('value', tokenListener);
+        await tokenRef.remove();
+        
+        const newCount = (earnCount[today] || 0) + 1;
+        const updates = {};
+        updates['hcoin'] = (u.hcoin || 0) + 500;
+        updates[`earnCount/${today}`] = newCount;
+        await userRef.update(updates);
+
+        document.getElementById('waitingVerifyModal').classList.add('hidden');
+        msg.style.color = '#00ff88';
+        msg.textContent = 'Vượt link thành công! Bạn nhận được 500 Hcoin.';
+        document.getElementById('hcoinValue').textContent = (u.hcoin || 0) + 500;
+        
+        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      }
+    });
+
+    document.getElementById('closeWaitBtn').onclick = () => {
+      tokenRef.off('value', tokenListener);
+      document.getElementById('waitingVerifyModal').classList.add('hidden');
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Bạn đã hủy quá trình vượt link.';
+    };
+  });
+
+  // CÁC SỰ KIỆN CŨ GIỮ NGUYÊN
   document.getElementById('snakeCard')?.addEventListener('click', () => {
     document.getElementById('gameDeletedModal').classList.remove('hidden');
   });
@@ -18,13 +80,35 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameDeletedModal').classList.add('hidden');
   });
 
-  // ================= LOGIC NẠP THẺ (DÀNH CHO USER) =================
+  document.getElementById('diceCard')?.addEventListener('click', () => {
+    document.getElementById('diceRulesModal').classList.remove('hidden');
+  });
+  document.getElementById('closeRulesBtn')?.addEventListener('click', () => {
+    document.getElementById('diceRulesModal').classList.add('hidden');
+  });
+
+  document.getElementById('startDiceBtn')?.addEventListener('click', async () => {
+    document.getElementById('diceRulesModal').classList.add('hidden');
+    const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
+    if (isFree) {
+      document.getElementById('dicePlayModal').classList.remove('hidden');
+      return;
+    }
+    const snap = await db.ref(`users/${CURRENT_USER.username}/coins`).once('value');
+    const coins = snap.val() || 0;
+    if (coins < 30000) {
+      document.getElementById('notEnoughCoinsModal').classList.remove('hidden');
+    } else {
+      document.getElementById('dicePlayModal').classList.remove('hidden');
+    }
+  });
+
+  // NẠP THẺ
   document.getElementById('openCardModalBtn')?.addEventListener('click', () => {
     document.getElementById('redeemCardModal').classList.remove('hidden');
     document.getElementById('redeemCardInput').value = '';
     document.getElementById('redeemCardMsg').textContent = '';
   });
-
   document.getElementById('closeRedeemBtn')?.addEventListener('click', () => {
     document.getElementById('redeemCardModal').classList.add('hidden');
   });
@@ -63,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // TÍNH XU THEO MỆNH GIÁ
     let coinsToAdd = 0;
     if (card.value === 1000) coinsToAdd = 10000;
     else if (card.value === 5000) coinsToAdd = 60000;
@@ -94,34 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2000);
   });
 
-  // ================= LOGIC VÒNG QUAY =================
-  document.getElementById('diceCard')?.addEventListener('click', () => {
-    document.getElementById('diceRulesModal').classList.remove('hidden');
-  });
-
-  document.getElementById('closeRulesBtn')?.addEventListener('click', () => {
-    document.getElementById('diceRulesModal').classList.add('hidden');
-  });
-
-  document.getElementById('startDiceBtn')?.addEventListener('click', async () => {
-    document.getElementById('diceRulesModal').classList.add('hidden');
-    const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
-    
-    if (isFree) {
-      document.getElementById('dicePlayModal').classList.remove('hidden');
-      return;
-    }
-
-    const snap = await db.ref(`users/${CURRENT_USER.username}/coins`).once('value');
-    const coins = snap.val() || 0;
-    
-    if (coins < 30000) {
-      document.getElementById('notEnoughCoinsModal').classList.remove('hidden');
-    } else {
-      document.getElementById('dicePlayModal').classList.remove('hidden');
-    }
-  });
-
+  // CÁC SỰ KIỆN VÒNG QUAY
   document.getElementById('closePlayBtn')?.addEventListener('click', () => {
     if (isSpinning) {
       document.getElementById('spinningWarningModal').classList.remove('hidden');
@@ -129,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('dicePlayModal').classList.add('hidden');
   });
-
   document.getElementById('closeSpinningWarningBtn')?.addEventListener('click', () => {
     document.getElementById('spinningWarningModal').classList.add('hidden');
   });
@@ -156,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('closeNotEnoughBtn')?.addEventListener('click', () => {
     document.getElementById('notEnoughCoinsModal').classList.add('hidden');
   });
-  
   document.getElementById('buyCoinsBtn')?.addEventListener('click', () => {
     document.getElementById('notEnoughCoinsModal').classList.add('hidden');
     document.getElementById('exchangeCoinsModal').classList.remove('hidden');
@@ -164,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exchangeErrorMsg').textContent = '';
     document.getElementById('exchangeAmount').value = '';
   });
-
   document.getElementById('closeExchangeBtn')?.addEventListener('click', () => {
     document.getElementById('exchangeCoinsModal').classList.add('hidden');
   });
@@ -172,15 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('confirmExchangeBtn')?.addEventListener('click', async () => {
     const errorMsg = document.getElementById('exchangeErrorMsg');
     errorMsg.textContent = ''; 
-
     const vnd = parseInt(document.getElementById('exchangeAmount').value);
     if (!vnd || vnd < 1000) {
       errorMsg.textContent = 'Số tiền tối thiểu là 1.000 VND!';
       return;
     }
-
     const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
-    
     let coinsToAdd = 0;
     if (vnd >= 500000) coinsToAdd = Math.floor(vnd / 500000) * 7500000;
     else if (vnd >= 200000) coinsToAdd = Math.floor(vnd / 200000) * 3000000;
@@ -193,21 +243,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
     const u = userSnap.val();
-    
     if (!isFree && u.balance < vnd) {
       errorMsg.textContent = 'Số dư VND không đủ!';
       return;
     }
-
     const updates = {};
-    if (!isFree) {
-      updates['balance'] = u.balance - vnd;
-    }
+    if (!isFree) updates['balance'] = u.balance - vnd;
     updates['coins'] = (u.coins || 0) + coinsToAdd;
-    
     await db.ref(`users/${CURRENT_USER.username}`).update(updates);
     writeLog(CURRENT_USER.username, 'EXCHANGE_COINS', `Đổi ${vnd} VND lấy ${coinsToAdd} xu`);
-    
     errorMsg.style.color = '#00ff88';
     errorMsg.textContent = `Đổi thành công ${coinsToAdd.toLocaleString('vi-VN')} xu!`;
     
@@ -242,12 +286,10 @@ function startSpin() {
   const spinBtn = document.getElementById('spinBtn');
   spinBtn.disabled = true;
   spinBtn.textContent = 'ĐANG QUAY...';
-
   document.querySelectorAll('.slot-item').forEach(el => el.classList.remove('active', 'win'));
 
   const rand = Math.random() * 100;
   let winIndex = 0;
-
   if (rand <= 83) winIndex = 0;
   else if (rand <= 83.01) winIndex = 1;
   else if (rand <= 83.0101) winIndex = 2;
@@ -280,7 +322,6 @@ function startSpin() {
       giveReward(winIndex);
     }
   }
-  
   animateSpin();
 }
 
@@ -288,26 +329,13 @@ async function giveReward(index) {
   const userRef = db.ref(`users/${CURRENT_USER.username}`);
   const snap = await userRef.once('value');
   const u = snap.val();
-  
   let rewardText = "";
   let updates = {};
 
-  if (index === 0) {
-    rewardText = "10.000 xu";
-    updates['coins'] = (u.coins || 0) + 10000;
-  } 
-  else if (index === 1) {
-    rewardText = "10.000.000 xu (JACKPOT)";
-    updates['coins'] = (u.coins || 0) + 10000000;
-  }
-  else if (index === 2) {
-    rewardText = "1.000.000 VND (Giải đặc biệt)";
-    updates['balance'] = (u.balance || 0) + 1000000;
-  }
-  else if (index === 3) {
-    rewardText = "5.000 VND";
-    updates['balance'] = (u.balance || 0) + 5000;
-  }
+  if (index === 0) { rewardText = "10.000 xu"; updates['coins'] = (u.coins || 0) + 10000; } 
+  else if (index === 1) { rewardText = "10.000.000 xu (JACKPOT)"; updates['coins'] = (u.coins || 0) + 10000000; }
+  else if (index === 2) { rewardText = "1.000.000 VND (Giải đặc biệt)"; updates['balance'] = (u.balance || 0) + 1000000; }
+  else if (index === 3) { rewardText = "5.000 VND"; updates['balance'] = (u.balance || 0) + 5000; }
   else if (index === 4) {
     const randomVnd = Math.floor(Math.random() * (2000 - 1000 + 1)) + 1000;
     rewardText = `${randomVnd.toLocaleString('vi-VN')} VND`;
@@ -323,12 +351,7 @@ async function giveReward(index) {
   writeLog(CURRENT_USER.username, 'SPIN_LUCKY', `Quay trúng: ${rewardText}`);
 
   if (typeof confetti === 'function') {
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#ffd700', '#00e5ff', '#ff3b5c', '#ffffff']
-    });
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#ffd700', '#00e5ff', '#ff3b5c', '#ffffff'] });
   }
 
   setTimeout(() => {
