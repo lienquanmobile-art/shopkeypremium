@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xác Nhận Vượt Link</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0d0f17; font-family: 'Outfit', sans-serif; margin: 0; }
+    .login-card { background: rgba(20, 24, 36, 0.8); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: 24px; padding: 40px; width: 100%; max-width: 440px; box-shadow: 0 0 40px rgba(0, 229, 255, 0.1); text-align: center; }
+    .login-card h2 { color: #00e5ff; margin-bottom: 10px; }
+    .login-card p { color: #a0aec0; margin-bottom: 20px; font-size: 14px; }
+    .login-form label { display: block; text-align: left; font-size: 13px; font-weight: 600; margin: 15px 0 5px; color: #a0aec0; }
+    .login-form input { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: #fff; font-size: 15px; outline: none; }
+    .login-form input:focus { border-color: #00e5ff; }
+    .btn-primary { width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #00e5ff, #8a2be2); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3); }
+    .msg { margin-top: 15px; font-size: 14px; font-weight: bold; color: #ff3b5c; }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <h2>Xác Nhận Vượt Link</h2>
+    <p><b>Lưu ý:</b> Vui lòng nhập chính xác thông tin tài khoản của bạn để nhận 500 Scoin.</p>
+    
+    <div class="login-form">
+      <label>Tên đăng nhập</label>
+      <input type="text" id="logUsername" placeholder="Nhập tên đăng nhập" />
+      <label>Mật khẩu</label>
+      <input type="password" id="logPassword" placeholder="Nhập mật khẩu" />
+      
+      <button id="confirmLogBtn" class="btn-primary">Xác nhận & Nhận Scoin</button>
+      <p id="logMsg" class="msg"></p>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCX2uQJsj3HuhNe9N3Dh5vP_9Ga6iYweLM",
+      authDomain: "shopblackkeypremium.firebaseapp.com",
+      databaseURL: "https://shopblackkeypremium-default-rtdb.firebaseio.com",
+      projectId: "shopblackkeypremium",
+      storageBucket: "shopblackkeypremium.firebasestorage.app",
+      messagingSenderId: "552944431229",
+      appId: "1:552944431229:web:6a874f98d12e7ff376c114"
+    };
+    
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    document.getElementById('confirmLogBtn').addEventListener('click', async () => {
+      const u = document.getElementById('logUsername').value.trim();
+      const p = document.getElementById('logPassword').value;
+      const msg = document.getElementById('logMsg');
+      
+      if (!u || !p) {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Vui lòng nhập đầy đủ thông tin!';
+        return;
+      }
+
+      const userRef = db.ref(`users/${u}`);
+      const snap = await userRef.once('value');
+      
+      if (!snap.exists()) {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Tài khoản không tồn tại!';
+        return;
+      }
+
+      const userData = snap.val();
+      if (userData.password !== p) {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Sai mật khẩu!';
+        return;
+      }
+
+      // Kiểm tra giới hạn trong ngày
+      const today = new Date().toISOString().split('T')[0];
+      const earnCount = userData.earnCount || {};
+      const doneToday = earnCount[today] || 0;
+
+      if (doneToday >= 2) {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Tài khoản này đã đạt giới hạn 2 lần/ngày hôm nay!';
+        return;
+      }
+
+      // Cộng Scoin
+      const updates = {};
+      updates['scoin'] = (userData.scoin || 0) + 500;
+      updates[`earnCount/${today}`] = doneToday + 1;
+
+      await userRef.update(updates);
+
+      msg.style.color = '#00ff88';
+      msg.textContent = 'Xác nhận thành công! Bạn nhận được 500 Scoin. Đang chuyển hướng...';
+      
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+      }
+      
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
