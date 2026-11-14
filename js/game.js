@@ -10,15 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // LOGIC KIẾM HCOIN QUA LINK4M
+  // ================= LOGIC KIẾM HCOIN QUA LINK4M =================
   document.getElementById('link4mCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
     const msg = document.getElementById('earnMsg');
     msg.textContent = '';
-
-    // THAY LINK NÀY BẰNG LINK RÚT GỌN THẬT CỦA BẠN
-    const LINK4M_TARGET = 'https://shopblackkeypremium.web.app/callback.html'; // Đổi thành link web thật của bạn
-    const YOUR_LINK4M_URL = "https://link4m.co/st/abcxyz"; // Thay link rút gọn của bạn vào đây
 
     const today = new Date().toISOString().split('T')[0];
     const userRef = db.ref(`users/${CURRENT_USER.username}`);
@@ -32,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Tạo Token
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
     await db.ref(`bypass_tokens/${token}`).set({
       username: CURRENT_USER.username,
@@ -39,9 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
+    // Trỏ đến trang redirect.html (Trang này sẽ đá sang Link4m)
     document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
 
+    // Lắng nghe xem trang callback.html có báo về không
     const tokenRef = db.ref(`bypass_tokens/${token}`);
     const tokenListener = tokenRef.on('value', async (tSnap) => {
       const tData = tSnap.val();
@@ -49,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenRef.off('value', tokenListener);
         await tokenRef.remove();
         
+        // Cộng 500 Hcoin
         const newCount = (earnCount[today] || 0) + 1;
         const updates = {};
         updates['hcoin'] = (u.hcoin || 0) + 500;
