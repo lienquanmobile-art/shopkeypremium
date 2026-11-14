@@ -18,7 +18,83 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('gameDeletedModal').classList.add('hidden');
   });
 
-  // Mở luật Vòng Quay
+  // ================= LOGIC NẠP THẺ (DÀNH CHO USER) =================
+  document.getElementById('openCardModalBtn')?.addEventListener('click', () => {
+    document.getElementById('redeemCardModal').classList.remove('hidden');
+    document.getElementById('redeemCardInput').value = '';
+    document.getElementById('redeemCardMsg').textContent = '';
+  });
+
+  document.getElementById('closeRedeemBtn')?.addEventListener('click', () => {
+    document.getElementById('redeemCardModal').classList.add('hidden');
+  });
+
+  document.getElementById('submitRedeemBtn')?.addEventListener('click', async () => {
+    const input = document.getElementById('redeemCardInput').value.trim();
+    const msg = document.getElementById('redeemCardMsg');
+    
+    if (!input || input.length !== 16) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Vui lòng nhập đúng 16 số!';
+      return;
+    }
+
+    const cardRef = db.ref(`cards/${input}`);
+    const snap = await cardRef.once('value');
+    
+    if (!snap.exists()) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Vui lòng nhập thông tin thẻ chính xác!';
+      return;
+    }
+
+    const card = snap.val();
+
+    if (card.status === 'used') {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Thẻ đã sử dụng!';
+      return;
+    }
+
+    if (Date.now() > card.expDate) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Thẻ đã hết hạn!';
+      await cardRef.update({ status: 'expired' });
+      return;
+    }
+
+    // TÍNH XU THEO MỆNH GIÁ
+    let coinsToAdd = 0;
+    if (card.value === 1000) coinsToAdd = 10000;
+    else if (card.value === 5000) coinsToAdd = 60000;
+    else if (card.value === 10000) coinsToAdd = 120000;
+    else if (card.value === 20000) coinsToAdd = 250000;
+    else if (card.value === 50000) coinsToAdd = 625000;
+    else if (card.value === 100000) coinsToAdd = 1400000;
+    else if (card.value === 200000) coinsToAdd = 3000000;
+    else if (card.value === 500000) coinsToAdd = 7500000;
+    else coinsToAdd = Math.floor(card.value / 1000) * 10000;
+
+    await cardRef.update({ status: 'used', usedBy: CURRENT_USER.username, usedAt: Date.now() });
+
+    const userRef = db.ref(`users/${CURRENT_USER.username}`);
+    const userSnap = await userRef.once('value');
+    await userRef.update({ coins: (userSnap.val().coins || 0) + coinsToAdd });
+
+    writeLog(CURRENT_USER.username, 'REDEEM_CARD', `Nạp thẻ ${card.value}VND, nhận ${coinsToAdd} xu`);
+
+    msg.style.color = '#00ff88';
+    msg.textContent = `Nạp thành công ${coinsToAdd.toLocaleString('vi-VN')} xu!`;
+    
+    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    
+    setTimeout(() => {
+      document.getElementById('redeemCardModal').classList.add('hidden');
+      loadGameData();
+    }, 2000);
+  });
+
+  // ================= LOGIC VÒNG QUAY =================
   document.getElementById('diceCard')?.addEventListener('click', () => {
     document.getElementById('diceRulesModal').classList.remove('hidden');
   });
@@ -27,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('diceRulesModal').classList.add('hidden');
   });
 
-  // Bắt đầu quay (từ bảng luật)
   document.getElementById('startDiceBtn')?.addEventListener('click', async () => {
     document.getElementById('diceRulesModal').classList.add('hidden');
     const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
@@ -47,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // SỰ KIỆN ĐÓNG BÀN QUAY (Đã thay alert bằng Modal)
   document.getElementById('closePlayBtn')?.addEventListener('click', () => {
     if (isSpinning) {
       document.getElementById('spinningWarningModal').classList.remove('hidden');
@@ -56,12 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dicePlayModal').classList.add('hidden');
   });
 
-  // Đóng bảng cảnh báo đang quay
   document.getElementById('closeSpinningWarningBtn')?.addEventListener('click', () => {
     document.getElementById('spinningWarningModal').classList.add('hidden');
   });
 
-  // Nút QUAY NGAY
   document.getElementById('spinBtn')?.addEventListener('click', async () => {
     if (isSpinning) return;
     const isFree = CURRENT_USER.role === 'ADMIN' || CURRENT_USER.role === 'OWNER';
@@ -81,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     startSpin();
   });
 
-  // Bảng thông báo hết xu
   document.getElementById('closeNotEnoughBtn')?.addEventListener('click', () => {
     document.getElementById('notEnoughCoinsModal').classList.add('hidden');
   });
@@ -98,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('exchangeCoinsModal').classList.add('hidden');
   });
 
-  // Xử lý ĐỔI XU
   document.getElementById('confirmExchangeBtn')?.addEventListener('click', async () => {
     const errorMsg = document.getElementById('exchangeErrorMsg');
     errorMsg.textContent = ''; 
@@ -150,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
   });
 
-  // Đóng bảng chúc mừng
   document.getElementById('closeCongratsBtn')?.addEventListener('click', () => {
     document.getElementById('congratsModal').classList.add('hidden');
     isSpinning = false;
@@ -168,7 +237,6 @@ async function loadGameData() {
   document.getElementById('userCoins').textContent = u.coins || 0;
 }
 
-// HÀM QUAY
 function startSpin() {
   isSpinning = true;
   const spinBtn = document.getElementById('spinBtn');
@@ -216,7 +284,6 @@ function startSpin() {
   animateSpin();
 }
 
-// HÀM CỘNG THƯỞNG VÀ BẮN PHÁO HOA
 async function giveReward(index) {
   const userRef = db.ref(`users/${CURRENT_USER.username}`);
   const snap = await userRef.once('value');
@@ -255,7 +322,6 @@ async function giveReward(index) {
   await userRef.update(updates);
   writeLog(CURRENT_USER.username, 'SPIN_LUCKY', `Quay trúng: ${rewardText}`);
 
-  // Hiệu ứng pháo hoa
   if (typeof confetti === 'function') {
     confetti({
       particleCount: 150,
@@ -265,7 +331,6 @@ async function giveReward(index) {
     });
   }
 
-  // Hiển thị bảng chúc mừng
   setTimeout(() => {
     document.getElementById('congratsReward').textContent = rewardText;
     document.getElementById('congratsModal').classList.remove('hidden');
