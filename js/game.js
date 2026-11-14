@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Tự động load lại dữ liệu khi quay lại tab (giải quyết lỗi 0/2)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && CURRENT_USER) {
+      loadGameData();
+    }
+  });
+
   // ================= LOGIC KIẾM SCOIN QUA LINK4M =================
   document.getElementById('link4mCard')?.addEventListener('click', async () => {
     if (!CURRENT_USER) return;
@@ -42,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lấy link gốc (Link 1 hoặc Link 2)
     const baseLink = doneToday === 0 ? config.link1 : config.link2;
 
-    // Mở link Link4m trực tiếp (Link này do Admin cấu hình trỏ về checklog.html)
+    // Mở link Link4m trực tiếp
     document.getElementById('verifyLinkBtn').href = baseLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
