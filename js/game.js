@@ -17,20 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     msg.style.color = '#ffd700';
     msg.textContent = 'Đang kiểm tra...';
 
+    // Lấy ngày hôm nay (định dạng YYYY-MM-DD)
     const today = new Date().toISOString().split('T')[0];
+
     const userRef = db.ref(`users/${CURRENT_USER.username}`);
     const snap = await userRef.once('value');
     const u = snap.val();
     
-    const earnCount = u.earnCount || {};
-    const doneToday = earnCount[today] || 0;
-
-    if (doneToday >= 2) {
-      msg.style.color = '#ff3b5c';
-      msg.textContent = 'Bạn đã đạt giới hạn 2 lần/ngày. Vui lòng quay lại vào ngày mai!';
-      return;
-    }
-
     // Lấy link từ Admin cấu hình
     const configSnap = await db.ref('config/earnLinks').once('value');
     const config = configSnap.val();
@@ -40,7 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Xác định dùng link 1 hay link 2
+    const earnCount = u.earnCount || {};
+    const doneToday = earnCount[today] || 0; // Đếm số lần đã vượt trong NGÀY HÔM NAY
+
+    // Nếu hôm nay đã vượt đủ 2 lần thì chặn
+    if (doneToday >= 2) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Bạn đã đạt giới hạn 2 lần/ngày. Vui lòng quay lại vào ngày mai!';
+      return;
+    }
+
+    // Chọn link 1 hay link 2 dựa vào số lần đã vượt hôm nay
     const currentLink = doneToday === 0 ? config.link1 : config.link2;
 
     const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
@@ -50,12 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
       createdAt: Date.now()
     });
 
-    // Điều hướng qua trang trung gian (redirect.html)
+    // Điều hướng qua trang trung gian
     document.getElementById('verifyLinkBtn').href = `redirect.html?token=${token}`;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
 
-    // Lưu link vào localStorage để redirect.html lấy
     localStorage.setItem('link4m_target', currentLink);
 
     const tokenRef = db.ref(`bypass_tokens/${token}`);
@@ -65,10 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tokenRef.off('value', tokenListener);
         await tokenRef.remove();
         
+        // Cộng Scoin và lưu số lần vượt theo NGÀY
         const newCount = doneToday + 1;
         const updates = {};
         updates['scoin'] = (u.scoin || 0) + 500;
-        updates[`earnCount/${today}`] = newCount;
+        updates[`earnCount/${today}`] = newCount; // Lưu theo ngày
         await userRef.update(updates);
 
         document.getElementById('waitingVerifyModal').classList.add('hidden');
@@ -77,6 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('scoinValue').textContent = (u.scoin || 0) + 500;
         
         if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+        // Load lại để cập nhật chữ 0/2
+        loadGameData();
       }
     });
 
@@ -296,10 +302,13 @@ async function loadGameData() {
   const u = snap.val();
   document.getElementById('userCoins').textContent = u.coins || 0;
 
-  // Cập nhật chữ 0/2 ở tab Kiếm Tiền
+  // Lấy ngày hôm nay
   const today = new Date().toISOString().split('T')[0];
+  
+  // Cập nhật chữ 0/2
   const earnCount = u.earnCount || {};
   const done = earnCount[today] || 0;
+  
   const progressEl = document.getElementById('earnProgress');
   if (progressEl) progressEl.textContent = `${done}/2`;
 
