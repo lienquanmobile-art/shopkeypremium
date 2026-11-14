@@ -34,8 +34,9 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // LẤY TOKEN TỪ LOCALSTORAGE (Đã lưu ở trang redirect.html)
-    const token = localStorage.getItem('bypass_token');
+    // Lấy token trực tiếp từ URL (đã được gắn ở trang game.js)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
 
     if (token) {
       db.ref(`bypass_tokens/${token}`).update({ status: 'completed' }).then(() => {
@@ -43,9 +44,6 @@
         document.getElementById('subText').textContent = "Bạn có thể quay lại web để nhận thưởng.";
         document.getElementById('loader').style.display = 'none';
         
-        localStorage.removeItem('bypass_token'); // Xóa token sau khi dùng xong
-        localStorage.removeItem('link4m_target'); // Xóa link đích
-
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 2000);
@@ -56,7 +54,7 @@
       });
     } else {
       document.getElementById('statusText').textContent = "Lỗi!";
-      document.getElementById('subText').textContent = "Không tìm thấy mã xác thực. Vui lòng thực hiện lại từ đầu.";
+      document.getElementById('subText').textContent = "Không tìm thấy mã xác thực.";
       document.getElementById('loader').style.display = 'none';
     }
   </script>
