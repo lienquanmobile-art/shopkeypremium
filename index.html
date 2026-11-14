@@ -113,19 +113,20 @@
         <div class="game-container">
           <div class="game-header">
             <h3 style="color: #00e5ff; font-size: 20px;">Thư viện Game</h3>
-            <div class="coin-display">Số xu: <span id="userCoins">0</span></div>
+            <div class="coin-display">
+              Số xu: <span id="userCoins">0</span>
+              <!-- NÚT DẤU CỘNG NẠP THẺ -->
+              <button id="openCardModalBtn" style="background: #00e5ff; color: #000; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; font-size: 18px; line-height: 24px; cursor: pointer; margin-left: 5px; padding: 0;">+</button>
+            </div>
           </div>
           
           <div class="game-grid">
-            <!-- Ô VUÔNG GAME XÚC XẮC -->
             <div class="game-card locked" id="diceCard">
               <div class="game-card-icon">🎲</div>
               <h3>Vòng Quay May Mắn</h3>
               <p>Thử vận may trúng VND</p>
               <p class="unlock-text" style="color: #00e5ff;">Click để xem luật</p>
             </div>
-
-            <!-- Ô 404 RẮN SĂN TÁO -->
             <div class="game-card dead-game" id="snakeCard">
               <div class="badge-404">404</div>
               <div class="game-card-icon">🐍</div>
@@ -147,6 +148,10 @@
         <button class="admin-tab" data-admin="key3d">Key 3 ngày</button>
         <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
         <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
+        <!-- 2 TAB MỚI CHO OWNER -->
+        <button class="admin-tab owner-only" data-admin="createcard">Tạo thẻ</button>
+        <button class="admin-tab owner-only" data-admin="listcard">Thẻ đã tạo</button>
+        
         <button class="admin-tab owner-only" data-admin="list">Danh sách tài khoản</button>
         <button class="admin-tab owner-only" data-admin="log">Log</button>
       </div>
@@ -187,6 +192,41 @@
       <div id="admin-key7d" class="admin-content hidden"><h3>Key 7 ngày</h3><input type="text" id="keyInput7d" placeholder="Thêm key của bạn" /><button id="addKey7d" class="btn-primary">+ Thêm</button><ul id="keyList7d" class="key-list"></ul></div>
       <div id="admin-key30d" class="admin-content hidden"><h3>Key 30 ngày</h3><input type="text" id="keyInput30d" placeholder="Thêm key của bạn" /><button id="addKey30d" class="btn-primary">+ Thêm</button><ul id="keyList30d" class="key-list"></ul></div>
       
+      <!-- KHU VỰC TẠO THẺ (MỚI) -->
+      <div id="admin-createcard" class="admin-content hidden">
+        <h3>Tạo thẻ nạp xu</h3>
+        <label>Mệnh giá (VND)</label>
+        <input type="number" id="cardValue" placeholder="Nhập mệnh giá..." />
+        <div class="denom-grid">
+          <button class="denom card-preset" data-amount="1000">1.000VND</button>
+          <button class="denom card-preset" data-amount="5000">5.000VND</button>
+          <button class="denom card-preset" data-amount="10000">10.000VND</button>
+          <button class="denom card-preset" data-amount="20000">20.000VND</button>
+          <button class="denom card-preset" data-amount="50000">50.000VND</button>
+          <button class="denom card-preset" data-amount="100000">100.000VND</button>
+          <button class="denom card-preset" data-amount="200000">200.000VND</button>
+          <button class="denom card-preset" data-amount="500000">500.000VND</button>
+        </div>
+
+        <label>Hạn sử dụng thẻ</label>
+        <div style="display:flex; gap:10px;">
+          <input type="number" id="cardExpDay" placeholder="Ngày" min="1" max="31" style="flex:1;" />
+          <input type="number" id="cardExpMonth" placeholder="Tháng" min="1" max="12" style="flex:1;" />
+          <input type="number" id="cardExpYear" placeholder="Năm" min="2024" style="flex:1;" />
+        </div>
+
+        <button id="createCardBtn" class="btn-primary" style="margin-top: 20px;">Tạo</button>
+        <p id="createCardMsg" class="msg"></p>
+      </div>
+
+      <!-- KHU VỰC THẺ ĐÃ TẠO (MỚI) -->
+      <div id="admin-listcard" class="admin-content hidden">
+        <h3>Thẻ đã tạo</h3>
+        <div id="cardListContainer" style="max-height: 500px; overflow-y: auto; padding-right: 5px;">
+          <!-- Danh sách thẻ load bằng JS -->
+        </div>
+      </div>
+
       <div id="admin-list" class="admin-content hidden">
         <h3>Danh sách tài khoản</h3>
         <div class="table-responsive">
@@ -394,6 +434,29 @@
         Vòng quay đang chạy, vui lòng đợi!
       </p>
       <button id="closeSpinningWarningBtn" class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ffaa00); color: #000;">Đã hiểu</button>
+    </div>
+  </div>
+
+  <!-- MODAL 7: NẠP THẺ -->
+  <div id="redeemCardModal" class="modal-overlay hidden" style="z-index: 10010;">
+    <div class="modal-content" style="border-color: #00e5ff; box-shadow: 0 0 40px rgba(0, 229, 255, 0.2); text-align: center;">
+      <h3 class="modal-title" style="color: #00e5ff; margin-bottom: 20px;">Mã Thẻ</h3>
+      
+      <input type="text" id="redeemCardInput" placeholder="Nhập mã thẻ 16 số..." maxlength="16" style="width: 100%; padding: 15px; font-size: 20px; text-align: center; background: rgba(0,0,0,0.5); border: 2px solid #00e5ff; border-radius: 10px; color: #fff; margin-bottom: 20px; outline: none; letter-spacing: 2px;" />
+      
+      <p id="redeemCardMsg" style="height: 20px; font-size: 14px; font-weight: bold; margin-bottom: 15px;"></p>
+
+      <button id="submitRedeemBtn" class="btn-primary">Nạp</button>
+      <button id="closeRedeemBtn" class="btn-secondary" style="width:100%">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL 8: THÔNG BÁO CHUNG (Dùng cho thay thế alert) -->
+  <div id="generalNoticeModal" class="modal-overlay hidden" style="z-index: 10015;">
+    <div class="modal-content" style="border-color: #00e5ff; text-align: center;">
+      <h3 id="noticeTitle" class="modal-title" style="color: #00e5ff;">Thông báo</h3>
+      <p id="noticeText" style="color: #e2e8f0; font-size: 16px; margin-bottom: 20px;"></p>
+      <button id="closeNoticeBtn" class="btn-primary">OK</button>
     </div>
   </div>
 
