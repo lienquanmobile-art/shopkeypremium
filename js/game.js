@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lấy link gốc (Link 1 hoặc Link 2)
     const baseLink = doneToday === 0 ? config.link1 : config.link2;
 
-    // Mở link Link4m trực tiếp (không truyền token, vì checklog.html sẽ tự xác thực)
+    // Mở link Link4m trực tiếp (Link này do Admin cấu hình trỏ về checklog.html)
     document.getElementById('verifyLinkBtn').href = baseLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
@@ -52,9 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const userListener = userRef.on('value', async (uSnap) => {
       const newU = uSnap.val();
-      // Nếu số Scoin tăng lên -> Hiện thông báo thành công
       if (newU && newU.scoin > initialScoin) {
-        userRef.off('value', userListener); // Ngắt lắng nghe
+        userRef.off('value', userListener);
         
         document.getElementById('waitingVerifyModal').classList.add('hidden');
         msg.style.color = '#00ff88';
