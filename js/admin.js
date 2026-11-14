@@ -56,7 +56,7 @@ function bindAdminTabs() {
   });
 }
 
-// ================== QUẢN LÝ THẺ NẠP ==================
+// ================== QUẢN LÝ THẺ NẠP (DÀNH CHO ADMIN/OWNER) ==================
 function generateCardCode() {
   let code = '';
   for(let i=0; i<16; i++) code += Math.floor(Math.random() * 10);
@@ -105,88 +105,6 @@ function bindCardLogic() {
     msg.style.color = '#00ff88';
     msg.textContent = `Tạo thành công thẻ: ${code}`;
     document.getElementById('cardValue').value = '';
-  });
-
-  // Nút Nạp Thẻ cho User
-  document.getElementById('openCardModalBtn')?.addEventListener('click', () => {
-    document.getElementById('redeemCardModal').classList.remove('hidden');
-    document.getElementById('redeemCardInput').value = '';
-    document.getElementById('redeemCardMsg').textContent = '';
-  });
-
-  document.getElementById('closeRedeemBtn')?.addEventListener('click', () => {
-    document.getElementById('redeemCardModal').classList.add('hidden');
-  });
-
-  document.getElementById('submitRedeemBtn')?.addEventListener('click', async () => {
-    const input = document.getElementById('redeemCardInput').value.trim();
-    const msg = document.getElementById('redeemCardMsg');
-    
-    if (!input || input.length !== 16) {
-      msg.style.color = '#ff3b5c';
-      msg.textContent = 'Vui lòng nhập đúng 16 số!';
-      return;
-    }
-
-    const cardRef = db.ref(`cards/${input}`);
-    const snap = await cardRef.once('value');
-    
-    if (!snap.exists()) {
-      msg.style.color = '#ff3b5c';
-      msg.textContent = 'Vui lòng nhập thông tin thẻ chính xác!';
-      return;
-    }
-
-    const card = snap.val();
-
-    if (card.status === 'used') {
-      msg.style.color = '#ff3b5c';
-      msg.textContent = 'Thẻ đã sử dụng!';
-      return;
-    }
-
-    if (Date.now() > card.expDate) {
-      msg.style.color = '#ff3b5c';
-      msg.textContent = 'Thẻ đã hết hạn!';
-      await cardRef.update({ status: 'expired' });
-      return;
-    }
-
-    // TÍNH XU THEO MỆNH GIÁ
-    let coinsToAdd = 0;
-    if (card.value === 1000) coinsToAdd = 10000;
-    else if (card.value === 5000) coinsToAdd = 60000;
-    else if (card.value === 10000) coinsToAdd = 120000;
-    else if (card.value === 20000) coinsToAdd = 250000;
-    else if (card.value === 50000) coinsToAdd = 625000;
-    else if (card.value === 100000) coinsToAdd = 1400000;
-    else if (card.value === 200000) coinsToAdd = 3000000;
-    else if (card.value === 500000) coinsToAdd = 7500000;
-    else coinsToAdd = Math.floor(card.value / 1000) * 10000;
-
-    // Cập nhật trạng thái thẻ
-    await cardRef.update({ 
-      status: 'used', 
-      usedBy: CURRENT_USER.username, 
-      usedAt: Date.now() 
-    });
-
-    // Cộng xu
-    const userRef = db.ref(`users/${CURRENT_USER.username}`);
-    const userSnap = await userRef.once('value');
-    await userRef.update({ coins: (userSnap.val().coins || 0) + coinsToAdd });
-
-    writeLog(CURRENT_USER.username, 'REDEEM_CARD', `Nạp thẻ ${card.value}VND, nhận ${coinsToAdd} xu`);
-
-    msg.style.color = '#00ff88';
-    msg.textContent = `Nạp thành công ${coinsToAdd.toLocaleString('vi-VN')} xu!`;
-    
-    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    
-    setTimeout(() => {
-      document.getElementById('redeemCardModal').classList.add('hidden');
-      loadGameData(); // Load lại số xu
-    }, 2000);
   });
 }
 
@@ -254,7 +172,7 @@ function loadCardList() {
   });
 }
 
-// ================== CÁC HÀM CŨ ==================
+// ================== CÁC HÀM CŨ (GIỮ NGUYÊN) ==================
 function bindCreateAccount() {
   document.getElementById('createAccountBtn').addEventListener('click', async () => {
     const msg = document.getElementById('createMsg');
