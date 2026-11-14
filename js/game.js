@@ -39,17 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Tạo Token ngẫu nhiên
+    const token = 'TK_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    
+    // LƯU TOKEN VÀ USERNAME VÀO LOCALSTORAGE ĐỂ CALLBACK ĐỌC
+    localStorage.setItem('bypass_token', token);
+    localStorage.setItem('bypass_user', CURRENT_USER.username);
+
     // Lấy link gốc (Link 1 hoặc Link 2)
     const baseLink = doneToday === 0 ? config.link1 : config.link2;
-
-    // Gắn thẳng Username vào link để callback đọc được
-    const finalLink = `${baseLink}?user=${CURRENT_USER.username}`;
-
-    document.getElementById('verifyLinkBtn').href = finalLink;
+    
+    // Hiển thị link
+    document.getElementById('verifyLinkBtn').href = baseLink;
     document.getElementById('waitingVerifyModal').classList.remove('hidden');
     msg.textContent = '';
 
-    // Vì không dùng Token, chúng ta sẽ kiểm tra User có thay đổi Scoin chưa
+    // Lắng nghe sự thay đổi số Scoin để cập nhật giao diện
     const initialScoin = u.scoin || 0;
 
     const userListener = userRef.on('value', async (uSnap) => {
@@ -65,6 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
 
+        // Xóa dữ liệu tạm
+        localStorage.removeItem('bypass_token');
+        localStorage.removeItem('bypass_user');
+
         loadGameData();
       }
     });
@@ -74,6 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('waitingVerifyModal').classList.add('hidden');
       msg.style.color = '#ff3b5c';
       msg.textContent = 'Bạn đã hủy quá trình vượt link.';
+      
+      localStorage.removeItem('bypass_token');
+      localStorage.removeItem('bypass_user');
     };
   });
 
