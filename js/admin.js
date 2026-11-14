@@ -26,6 +26,7 @@ window.refreshAdminData = function() {
 };
 
 function bindAdminTabs() {
+  // Tab Lớn
   document.querySelectorAll('.admin-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
@@ -37,6 +38,19 @@ function bindAdminTabs() {
       if (target === 'log') loadLogs();
       if (target === 'balance') loadBalanceUserOptions();
       if (target === 'list') loadUserTable();
+      if (target === 'cards') loadCardList();
+    });
+  });
+
+  // Tab Con (Sub-tabs)
+  document.querySelectorAll('.sub-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.sub;
+      document.querySelectorAll('.sub-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById(`sub-${target}`).classList.remove('hidden');
+      
       if (target === 'listcard') loadCardList();
     });
   });
@@ -71,7 +85,7 @@ function bindCardLogic() {
 
     const code = generateCardCode();
     
-    // Kiểm tra trùng (xác suất cực thấp nhưng vẫn check)
+    // Kiểm tra trùng
     const checkSnap = await db.ref(`cards/${code}`).once('value');
     if (checkSnap.exists()) {
       msg.textContent = 'Lỗi trùng mã thẻ, vui lòng bấm tạo lại!';
@@ -381,7 +395,7 @@ function loadLogs() {
   });
 }
 
-// BAN LOGIC (Giữ nguyên)
+// BAN LOGIC
 function loadUserTable() {
   const tbody = document.getElementById('userTableBody');
   if (!tbody) return;
