@@ -99,6 +99,7 @@ function enterApp(user) {
     if (u.banUntil && u.banUntil > Date.now()) {
       showBannedModal(u.banUntil, u.banReason);
     }
+    checkAccLockStatus();
   });
 }
 
@@ -143,7 +144,7 @@ function bindHomeUI() {
     });
   });
 
-  // 2. Chuyển tab CON (Dùng display trực tiếp để chống crash)
+  // 2. Chuyển tab CON (Mua Key / Mua Acc)
   document.getElementById('btnSubKey')?.addEventListener('click', () => {
     document.getElementById('btnSubKey').classList.add('active');
     document.getElementById('btnSubAcc').classList.remove('active');
@@ -156,6 +157,7 @@ function bindHomeUI() {
     document.getElementById('btnSubKey').classList.remove('active');
     document.getElementById('subhome-key').style.display = 'none';
     document.getElementById('subhome-acc').style.display = 'block';
+    checkAccLockStatus(); // Kiểm tra quyền khi mở tab
   });
 
   // 3. Chuyển trang Trang chủ / Quản lí
@@ -201,6 +203,68 @@ function bindHomeUI() {
     btn.textContent = 'Đã chép!'; btn.style.background = '#00e5ff'; btn.style.color = '#000';
     setTimeout(() => { btn.textContent = 'Sao chép'; btn.style.background = ''; btn.style.color = ''; }, 2000);
   });
+
+  // 5. Logic Mua Acc
+  document.getElementById('randomAccCard')?.addEventListener('click', async () => {
+    const msg = document.getElementById('buyAccMsg');
+    if (!CURRENT_USER) return flash(msg, 'Bạn cần đăng nhập');
+
+    const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
+    const u = userSnap.val();
+    
+    if (u.accLocked !== false) {
+      return flash(msg, 'Tài khoản của bạn đã bị khóa tính năng mua Acc. Vui lòng liên hệ Admin!');
+    }
+
+    const price = 200;
+    if ((u.balance || 0) < price) {
+      return flash(msg, `Số dư không đủ (cần ${formatMoney(price)}đ)`);
+    }
+
+    const accSnap = await db.ref('shop_accounts/random').once('value');
+    const accObj = accSnap.val() || {};
+    const accIds = Object.keys(accObj);
+    
+    if (accIds.length === 0) {
+      return flash(msg, 'Hiện tại đã hết acc, vui lòng quay lại sau!');
+    }
+
+    const chosenId = accIds[Math.floor(Math.random() * accIds.length)];
+    const chosenAcc = accObj[chosenId];
+
+    if (!confirm(`Bạn có chắc muốn mua Acc Random với giá ${formatMoney(price)}đ?`)) return;
+
+    const updates = {};
+    updates[`users/${CURRENT_USER.username}/balance`] = u.balance - price;
+    updates[`shop_accounts/random/${chosenId}`] = null; 
+    updates[`purchases/${CURRENT_USER.username}/${Date.now()}`] = {
+      package: 'random_acc',
+      packageName: 'Acc Liên Quân Random',
+      price: price,
+      key: `TK: ${chosenAcc.username} | MK: ${chosenAcc.password}`,
+      note: 'Mua acc'
+    };
+
+    await db.ref().update(updates);
+    await writeLog(CURRENT_USER.username, 'BUY_ACC', `Mua acc random với giá ${price}đ`);
+
+    document.getElementById('modalDescText').textContent = 'Tài khoản của bạn là:';
+    document.getElementById('modalKeyValue').textContent = `TK: ${chosenAcc.username} | MK: ${chosenAcc.password}`;
+    document.getElementById('successModal').classList.remove('hidden');
+    
+    msg.textContent = '';
+    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+  });
+}
+
+async function checkAccLockStatus() {
+  if (!CURRENT_USER) return;
+  const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
+  const u = snap.val();
+  const isLocked = u.accLocked !== false;
+
+  document.getElementById('accStoreLocked').classList.toggle('hidden', !isLocked);
+  document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
 }
 
 async function handleBuy() {
@@ -236,6 +300,7 @@ async function handleBuy() {
 
   await writeLog(CURRENT_USER.username, 'BUY_KEY', isFree ? `Nhận key FREE (${pkg.name}) - key: ${chosenKey}` : `Mua ${pkg.name} - key: ${chosenKey}`);
   msg.textContent = ''; 
+  document.getElementById('modalDescText').textContent = 'Key của bạn là:';
   document.getElementById('modalKeyValue').textContent = chosenKey;
   document.getElementById('successModal').classList.remove('hidden');
 }
