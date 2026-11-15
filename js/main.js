@@ -244,7 +244,7 @@ function bindHomeUI() {
     }
 
     // ĐÃ SỬA GIÁ TẠI ĐÂY
-    const price = 2700;
+    const price = 5000;
     if ((u.balance || 0) < price) {
       return flash(msg, `Số dư không đủ (cần ${formatMoney(price)}đ)`);
     }
