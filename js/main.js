@@ -157,7 +157,7 @@ function bindHomeUI() {
     document.getElementById('btnSubKey').classList.remove('active');
     document.getElementById('subhome-key').style.display = 'none';
     document.getElementById('subhome-acc').style.display = 'block';
-    checkAccLockStatus(); // Kiểm tra quyền khi mở tab
+    checkAccLockStatus(); 
   });
 
   // 3. Chuyển trang Trang chủ / Quản lí
@@ -172,7 +172,7 @@ function bindHomeUI() {
     });
   });
 
-  // 4. Chọn gói
+  // 4. Chọn gói mua Key
   document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
@@ -216,6 +216,14 @@ function bindHomeUI() {
       return flash(msg, 'Tài khoản của bạn đã bị khóa tính năng mua Acc. Vui lòng liên hệ Admin!');
     }
 
+    const today = new Date().toISOString().split('T')[0];
+    const dailyAccCount = u.accDailyCount || {};
+    const countToday = dailyAccCount[today] || 0;
+
+    if (countToday >= 15) {
+      return flash(msg, `Bạn đã đạt giới hạn mua 15 acc/ngày. Vui lòng quay lại vào ngày mai!`);
+    }
+
     const price = 200;
     if ((u.balance || 0) < price) {
       return flash(msg, `Số dư không đủ (cần ${formatMoney(price)}đ)`);
@@ -236,6 +244,7 @@ function bindHomeUI() {
 
     const updates = {};
     updates[`users/${CURRENT_USER.username}/balance`] = u.balance - price;
+    updates[`users/${CURRENT_USER.username}/accDailyCount/${today}`] = countToday + 1; 
     updates[`shop_accounts/random/${chosenId}`] = null; 
     updates[`purchases/${CURRENT_USER.username}/${Date.now()}`] = {
       package: 'random_acc',
@@ -261,8 +270,15 @@ async function checkAccLockStatus() {
   if (!CURRENT_USER) return;
   const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
   const u = snap.val();
-  const isLocked = u.accLocked !== false;
+  
+  // Tự động mở khóa nếu là OWNER
+  if (CURRENT_USER.role === 'OWNER' || CURRENT_USER.role === 'ADMIN') {
+    document.getElementById('accStoreLocked').classList.add('hidden');
+    document.getElementById('accStoreContent').classList.remove('hidden');
+    return;
+  }
 
+  const isLocked = u.accLocked !== false;
   document.getElementById('accStoreLocked').classList.toggle('hidden', !isLocked);
   document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
 }
