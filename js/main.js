@@ -293,26 +293,25 @@ async function checkAccLockStatus() {
   if (CURRENT_USER.role === 'OWNER' || CURRENT_USER.role === 'ADMIN') {
     document.getElementById('accStoreLocked').classList.add('hidden');
     document.getElementById('accStoreContent').classList.remove('hidden');
-    return;
+  } else {
+    const isLocked = u.accLocked !== false;
+    document.getElementById('accStoreLocked').classList.toggle('hidden', !isLocked);
+    document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
   }
 
-  const isLocked = u.accLocked !== false;
-  document.getElementById('accStoreLocked').classList.toggle('hidden', !isLocked);
-  document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
+  // 1. Cập nhật số lượng tồn kho thực tế (Từ shop_accounts)
+  const accSnap = await db.ref('shop_accounts/random').once('value');
+  const totalStock = accSnap.exists() ? Object.keys(accSnap.val()).length : 0;
+  const qtyEl = document.getElementById('randomAccQty');
+  if (qtyEl) qtyEl.textContent = totalStock;
 
-  // Cập nhật số lượt còn lại
+  // 2. Cập nhật số lượt còn lại của User
   const today = new Date().toISOString().split('T')[0];
   const dailyAccCount = u.accDailyCount || {};
   const countToday = dailyAccCount[today] || 0;
   const remain = 15 - countToday;
-  
-  const qtyEl = document.getElementById('randomAccQty');
-  if (qtyEl) {
-    qtyEl.textContent = remain >= 0 ? remain : 0;
-  }
-  
-  // Cập nhật text giới hạn
-  const limitTextEl = document.querySelector('#randomAccCard p:last-child');
+
+  const limitTextEl = document.getElementById('accLimitText');
   if (limitTextEl) {
     limitTextEl.textContent = `Còn lại: ${remain >= 0 ? remain : 0}/15 acc hôm nay`;
     limitTextEl.style.color = remain > 0 ? '#00ff88' : '#ff3b5c';
