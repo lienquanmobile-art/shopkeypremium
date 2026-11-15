@@ -1,14 +1,16 @@
 // auth.js
 const SESSION_KEY = 'bskp_session';
 
-// Chuyển từ localStorage sang sessionStorage để tự động đăng xuất khi tắt tab
+// Lưu Session vào sessionStorage (tự đăng xuất khi tắt tab)
 function saveSession(user) {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
 }
+
 function getSession() {
   const raw = sessionStorage.getItem(SESSION_KEY);
   return raw ? JSON.parse(raw) : null;
 }
+
 function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
@@ -18,7 +20,15 @@ async function ensureOwnerAccount() {
   const snap = await ownerRef.once('value');
   if (!snap.exists()) {
     await ownerRef.set({
-      username: 'black', password: '1', role: 'OWNER', privateKey: 'BLACKOWNER_30102011', balance: 0, createdAt: Date.now()
+      username: 'black', 
+      password: '1', 
+      role: 'OWNER', 
+      privateKey: 'BLACKOWNER_30102011', 
+      balance: 0, 
+      coins: 0, 
+      scoin: 0, 
+      accLocked: false, 
+      createdAt: Date.now()
     });
     await writeLog('system', 'INIT_OWNER', 'Tạo tài khoản Owner mặc định');
   }
