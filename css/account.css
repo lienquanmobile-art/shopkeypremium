@@ -1,0 +1,62 @@
+/* CSS CHO PHẦN MUA ACC */
+.acc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.acc-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.acc-card:hover {
+  border-color: #00e5ff;
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 229, 255, 0.1);
+}
+
+.acc-card h3 { color: #fff; font-size: 18px; margin-bottom: 10px; }
+.acc-card .acc-quantity { color: #ffd700; font-weight: bold; font-size: 20px; }
+.acc-card .acc-price { color: #00e5ff; font-weight: bold; margin-top: 10px; }
+
+/* Nút Khóa/Mở trong bảng Admin */
+.btn-toggle {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+  color: #fff;
+  margin-right: 5px;
+}
+.btn-toggle.lock { background: #ff3b5c; }
+.btn-toggle.unlock { background: #00ff88; color: #000; }
+
+/* Danh sách acc trong tab Admin */
+.acc-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+.acc-list-item span {
+  font-family: monospace;
+  font-size: 15px;
+  color: #fff;
+}
