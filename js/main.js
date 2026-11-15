@@ -24,15 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       clearSession();
     }
   }
-
-  // Tự động mở tab game nếu có tham số ?tab=game trên URL
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('tab') === 'game') {
-    setTimeout(() => {
-      const gameTabBtn = document.querySelector('[data-home="game"]');
-      if (gameTabBtn) gameTabBtn.click();
-    }, 500); 
-  }
 });
 
 function bindLoginUI() {
@@ -135,47 +126,36 @@ function showBannedModal(banUntil, reason) {
 }
 
 function bindHomeUI() {
-  // 1. Chuyển tab LỚN (Menu / Nạp Tiền / Lịch sử / Game / Kiếm Tiền)
+  // Chuyển tab LỚN
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.home;
       
-      // Ẩn tất cả các tab lớn
-      document.getElementById('home-menu').classList.add('hidden');
-      document.getElementById('home-deposit').classList.add('hidden');
-      document.getElementById('home-history').classList.add('hidden');
-      document.getElementById('home-game').classList.add('hidden');
-      document.getElementById('home-earn').classList.add('hidden');
-
-      // Hiện tab được chọn
-      if (target === 'menu') document.getElementById('home-menu').classList.remove('hidden');
-      if (target === 'deposit') document.getElementById('home-deposit').classList.remove('hidden');
-      if (target === 'history') { document.getElementById('home-history').classList.remove('hidden'); loadHistory(); }
-      if (target === 'game') document.getElementById('home-game').classList.remove('hidden');
-      if (target === 'earn') document.getElementById('home-earn').classList.remove('hidden');
+      document.getElementById('home-menu').classList.toggle('hidden', target !== 'menu');
+      document.getElementById('home-deposit').classList.toggle('hidden', target !== 'deposit');
+      document.getElementById('home-history').classList.toggle('hidden', target !== 'history');
+      document.getElementById('home-game').classList.toggle('hidden', target !== 'game');
+      document.getElementById('home-earn').classList.toggle('hidden', target !== 'earn');
+      
+      if (target === 'history') loadHistory();
     });
   });
 
-  // 2. Chuyển tab CON trong Menu (Mua Key / Mua Acc)
+  // Chuyển tab CON (Mua Key / Mua Acc)
   document.querySelectorAll('.sub-tab[data-subhome]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab[data-subhome]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.subhome;
       
-      // Ẩn cả 2 tab con
-      document.getElementById('subhome-key').classList.add('hidden');
-      document.getElementById('subhome-acc').classList.add('hidden');
-
-      // Hiện tab con được chọn
-      if (target === 'key') document.getElementById('subhome-key').classList.remove('hidden');
-      if (target === 'acc') document.getElementById('subhome-acc').classList.remove('hidden');
+      document.getElementById('subhome-key').classList.toggle('hidden', target !== 'key');
+      document.getElementById('subhome-acc').classList.toggle('hidden', target !== 'acc');
     });
   });
 
-  // 3. Chuyển trang Trang chủ / Quản lí
+  // Chuyển trang Trang chủ / Quản lí
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -187,7 +167,7 @@ function bindHomeUI() {
     });
   });
 
-  // 4. Chọn gói mua Key
+  // Chọn gói
   document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
