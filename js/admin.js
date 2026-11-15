@@ -13,7 +13,7 @@ window.initAdminPage = function (user) {
   bindBanLogic();
   bindCardLogic();
   bindLinkConfigLogic();
-  bindAddAccLogic(); // Thêm hàm này
+  bindAddAccLogic();
 };
 
 window.refreshAdminData = function() {
@@ -40,7 +40,6 @@ function bindAdminTabs() {
       if (target === 'list') loadUserTable();
       if (target === 'cards') loadCardList();
       if (target === 'linkconfig') loadLinkConfig();
-      // Không cần gọi gì cho 'addacc' vì nó tự động lắng nghe realtime
     });
   });
 
@@ -48,7 +47,7 @@ function bindAdminTabs() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const target = btn.dataset.sub || btn.dataset.subacc || btn.dataset.subhome;
+      const target = btn.dataset.sub || btn.dataset.subacc;
       
       if (target === 'createcard' || target === 'listcard') {
         document.querySelectorAll('.sub-content').forEach(c => c.classList.add('hidden'));
@@ -59,7 +58,7 @@ function bindAdminTabs() {
   });
 }
 
-// ================= QUẢN LÝ ACC LIÊN QUÂN (MỚI) =================
+// ================= QUẢN LÝ ACC LIÊN QUÂN =================
 function bindAddAccLogic() {
   document.getElementById('addAccBtn')?.addEventListener('click', async () => {
     const u = document.getElementById('accUsername').value.trim();
@@ -81,15 +80,11 @@ function bindAddAccLogic() {
     document.getElementById('accPassword').value = '';
   });
 
-  // Lắng nghe realtime danh sách acc
+  // Lắng nghe realtime danh sách acc trong tab Admin
   db.ref('shop_accounts/random').on('value', snap => {
     const data = snap.val() || {};
     const list = Object.values(data);
     
-    // Cập nhật số lượng bên tab Mua Acc
-    document.getElementById('randomAccQty').textContent = list.length;
-    
-    // Cập nhật bảng danh sách bên Admin
     const container = document.getElementById('adminAccList');
     if (container) {
       container.innerHTML = '';
@@ -266,7 +261,7 @@ function loadCardList() {
   });
 }
 
-// ================= CÁC HÀM CŨ (GIỮ NGUYÊN) =================
+// ================= CÁC HÀM CŨ =================
 function bindCreateAccount() {
   document.getElementById('createAccountBtn').addEventListener('click', async () => {
     const msg = document.getElementById('createMsg');
@@ -407,7 +402,7 @@ function loadLogs() {
   });
 }
 
-// BAN & ACC LOCK LOGIC
+// ================= BAN & ACC LOCK LOGIC =================
 function loadUserTable() {
   const tbody = document.getElementById('userTableBody');
   if (!tbody) return;
