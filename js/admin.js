@@ -12,7 +12,8 @@ window.initAdminPage = function (user) {
   bindDenomButtons();
   bindBanLogic();
   bindCardLogic();
-  bindLinkConfigLogic(); // Thêm logic gắn link
+  bindLinkConfigLogic();
+  bindAddAccLogic(); // Thêm hàm này
 };
 
 window.refreshAdminData = function() {
@@ -38,7 +39,8 @@ function bindAdminTabs() {
       if (target === 'balance') loadBalanceUserOptions();
       if (target === 'list') loadUserTable();
       if (target === 'cards') loadCardList();
-      if (target === 'linkconfig') loadLinkConfig(); // Load khi mở tab
+      if (target === 'linkconfig') loadLinkConfig();
+      // Không cần gọi gì cho 'addacc' vì nó tự động lắng nghe realtime
     });
   });
 
@@ -46,16 +48,79 @@ function bindAdminTabs() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const target = btn.dataset.sub;
-      document.querySelectorAll('.sub-content').forEach(c => c.classList.add('hidden'));
-      document.getElementById(`sub-${target}`).classList.remove('hidden');
+      const target = btn.dataset.sub || btn.dataset.subacc || btn.dataset.subhome;
       
-      if (target === 'listcard') loadCardList();
+      if (target === 'createcard' || target === 'listcard') {
+        document.querySelectorAll('.sub-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(`sub-${target}`).classList.remove('hidden');
+        if (target === 'listcard') loadCardList();
+      }
     });
   });
 }
 
-// ================== CẤU HÌNH LINK (MỚI) ==================
+// ================= QUẢN LÝ ACC LIÊN QUÂN (MỚI) =================
+function bindAddAccLogic() {
+  document.getElementById('addAccBtn')?.addEventListener('click', async () => {
+    const u = document.getElementById('accUsername').value.trim();
+    const p = document.getElementById('accPassword').value.trim();
+    const msg = document.getElementById('addAccMsg');
+
+    if (!u || !p) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Vui lòng nhập đủ Tên và Mật khẩu!';
+      return;
+    }
+
+    await db.ref('shop_accounts/random').push({ username: u, password: p });
+    await writeLog(CURRENT_USER.username, 'ADD_ACC', `Thêm acc random: ${u}`);
+    
+    msg.style.color = '#00ff88';
+    msg.textContent = 'Thêm acc thành công!';
+    document.getElementById('accUsername').value = '';
+    document.getElementById('accPassword').value = '';
+  });
+
+  // Lắng nghe realtime danh sách acc
+  db.ref('shop_accounts/random').on('value', snap => {
+    const data = snap.val() || {};
+    const list = Object.values(data);
+    
+    // Cập nhật số lượng bên tab Mua Acc
+    document.getElementById('randomAccQty').textContent = list.length;
+    
+    // Cập nhật bảng danh sách bên Admin
+    const container = document.getElementById('adminAccList');
+    if (container) {
+      container.innerHTML = '';
+      document.getElementById('totalAccCount').textContent = list.length;
+      
+      if (list.length === 0) {
+        container.innerHTML = '<p style="color:#666">Chưa có acc nào.</p>';
+        return;
+      }
+
+      Object.entries(data).forEach(([id, acc]) => {
+        const div = document.createElement('div');
+        div.className = 'acc-list-item';
+        div.innerHTML = `
+          <span>TK: <b>${acc.username}</b> | MK: <b>${acc.password}</b></span>
+          <button class="btn-secondary" style="margin-top:0; padding: 5px 10px; color: #ff3b5c; border-color: #ff3b5c;" onclick="deleteAcc('${id}')">Xóa</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+  });
+}
+
+window.deleteAcc = async function(id) {
+  if (confirm('Bạn có chắc muốn xóa acc này?')) {
+    await db.ref(`shop_accounts/random/${id}`).remove();
+    await writeLog(CURRENT_USER.username, 'DELETE_ACC', `Xóa acc random ID: ${id}`);
+  }
+};
+
+// ================= CẤU HÌNH LINK =================
 function bindLinkConfigLogic() {
   document.getElementById('saveLinkConfigBtn')?.addEventListener('click', async () => {
     const link1 = document.getElementById('configLink1').value.trim();
@@ -89,7 +154,7 @@ async function loadLinkConfig() {
   }
 }
 
-// ================== QUẢN LÝ THẺ (GIỮ NGUYÊN) ==================
+// ================= QUẢN LÝ THẺ =================
 function generateCardCode() {
   let code = '';
   for(let i=0; i<16; i++) code += Math.floor(Math.random() * 10);
@@ -201,7 +266,7 @@ function loadCardList() {
   });
 }
 
-// ================== CÁC HÀM CŨ (GIỮ NGUYÊN) ==================
+// ================= CÁC HÀM CŨ (GIỮ NGUYÊN) =================
 function bindCreateAccount() {
   document.getElementById('createAccountBtn').addEventListener('click', async () => {
     const msg = document.getElementById('createMsg');
@@ -214,7 +279,7 @@ function bindCreateAccount() {
     if (checkSnap.exists()) return flash(msg, 'Tên đăng nhập đã tồn tại');
 
     const privateKey = generatePrivateKey(type);
-    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, coins: 0, scoin: 0, createdAt: Date.now(), createdBy: CURRENT_USER.username });
+    await db.ref(`users/${username}`).set({ username, password, role: type, privateKey, balance: 0, coins: 0, scoin: 0, accLocked: true, createdAt: Date.now(), createdBy: CURRENT_USER.username });
     await writeLog(CURRENT_USER.username, 'CREATE_ACCOUNT', `Tạo tài khoản ${type}: ${username}`);
 
     document.getElementById('resType').textContent = type;
@@ -342,7 +407,7 @@ function loadLogs() {
   });
 }
 
-// BAN LOGIC
+// BAN & ACC LOCK LOGIC
 function loadUserTable() {
   const tbody = document.getElementById('userTableBody');
   if (!tbody) return;
@@ -359,25 +424,38 @@ function loadUserTable() {
       
       const isBanned = u.banUntil && u.banUntil > Date.now();
       const statusHtml = isBanned 
-        ? `<span class="status-badge status-banned">Bị khóa</span>` 
+        ? `<span class="status-badge status-banned">Bị khóa (Cấm)</span>` 
         : `<span class="status-badge status-active">Bình thường</span>`;
       
-      const actionBtn = isBanned
+      const banBtn = isBanned
         ? `<button class="btn-secondary btn-sm btn-unban" data-uname="${uname}">Bỏ cấm</button>`
         : `<button class="btn-secondary btn-sm btn-ban" data-uname="${uname}" style="color: #ff3b5c; border-color: #ff3b5c;">Cấm</button>`;
+
+      const isAccLocked = u.accLocked !== false;
+      const accToggleBtn = isAccLocked
+        ? `<button class="btn-toggle lock" onclick="toggleAccLock('${uname}', false)">Khóa</button>`
+        : `<button class="btn-toggle unlock" onclick="toggleAccLock('${uname}', true)">Mở</button>`;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${uname}</strong> <br><small style="color:#888">${u.role}</small></td>
-        <td style="color: #00e5ff; font-weight: bold;">${formatMoney(u.balance || 0)}đ <br><small style="color:#ffd700">${u.coins || 0} xu</small></td>
+        <td style="color: #00e5ff; font-weight: bold;">${formatMoney(u.balance || 0)}đ <br><small style="color:#ffd700">${u.scoin || 0} Scoin</small></td>
         <td>${statusHtml}</td>
-        <td>${actionBtn}</td>
+        <td style="display:flex; gap: 5px; flex-wrap: wrap;">
+          ${banBtn}
+          ${accToggleBtn}
+        </td>
       `;
       tbody.appendChild(tr);
     }
     bindTableButtons();
   });
 }
+
+window.toggleAccLock = async function(uname, isLocked) {
+  await db.ref(`users/${uname}`).update({ accLocked: isLocked });
+  await writeLog(CURRENT_USER.username, 'TOGGLE_ACC', `${isLocked ? 'Khóa' : 'Mở'} quyền mua acc của ${uname}`);
+};
 
 function bindTableButtons() {
   document.querySelectorAll('.btn-ban').forEach(btn => {
