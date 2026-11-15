@@ -24,6 +24,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       clearSession();
     }
   }
+
+  // Tự động mở tab game nếu có tham số ?tab=game trên URL
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('tab') === 'game') {
+    setTimeout(() => {
+      const gameTabBtn = document.querySelector('[data-home="game"]');
+      if (gameTabBtn) gameTabBtn.click();
+    }, 500); // Đợi 0.5s để web load xong
+  }
 });
 
 function bindLoginUI() {
@@ -126,12 +135,13 @@ function showBannedModal(banUntil, reason) {
 }
 
 function bindHomeUI() {
+  // Chuyển tab Mua Key / Nạp Tiền / Lịch sử / Game / Kiếm Tiền
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.dataset.home;
-      document.getElementById('home-buykey').classList.toggle('hidden', target !== 'buykey');
+      document.getElementById('home-menu').classList.toggle('hidden', target !== 'menu');
       document.getElementById('home-deposit').classList.toggle('hidden', target !== 'deposit');
       document.getElementById('home-history').classList.toggle('hidden', target !== 'history');
       document.getElementById('home-game').classList.toggle('hidden', target !== 'game');
@@ -140,6 +150,19 @@ function bindHomeUI() {
     });
   });
 
+  // Xử lý chuyển tab con trong tab Menu
+  document.querySelectorAll('.sub-tab[data-subhome]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.sub-tab[data-subhome]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.subhome;
+      
+      document.getElementById('subhome-key').classList.toggle('hidden', target !== 'key');
+      document.getElementById('subhome-acc').classList.toggle('hidden', target !== 'acc');
+    });
+  });
+
+  // Nav chính
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -151,6 +174,7 @@ function bindHomeUI() {
     });
   });
 
+  // Chọn gói mua Key
   document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
