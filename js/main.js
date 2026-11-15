@@ -299,6 +299,24 @@ async function checkAccLockStatus() {
   const isLocked = u.accLocked !== false;
   document.getElementById('accStoreLocked').classList.toggle('hidden', !isLocked);
   document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
+
+  // Cập nhật số lượt còn lại
+  const today = new Date().toISOString().split('T')[0];
+  const dailyAccCount = u.accDailyCount || {};
+  const countToday = dailyAccCount[today] || 0;
+  const remain = 15 - countToday;
+  
+  const qtyEl = document.getElementById('randomAccQty');
+  if (qtyEl) {
+    qtyEl.textContent = remain >= 0 ? remain : 0;
+  }
+  
+  // Cập nhật text giới hạn
+  const limitTextEl = document.querySelector('#randomAccCard p:last-child');
+  if (limitTextEl) {
+    limitTextEl.textContent = `Còn lại: ${remain >= 0 ? remain : 0}/15 acc hôm nay`;
+    limitTextEl.style.color = remain > 0 ? '#00ff88' : '#ff3b5c';
+  }
 }
 
 async function handleBuy() {
