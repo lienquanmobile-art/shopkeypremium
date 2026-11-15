@@ -188,6 +188,21 @@ body {
   color: #00e5ff;
 }
 
+/* Khối thông báo đang phát triển */
+.sub-content {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.sub-content .deposit-dev {
+  text-align: center; 
+  padding: 80px 20px; 
+  background: rgba(20, 24, 36, 0.5);
+  border: 1px dashed rgba(138, 43, 226, 0.5); 
+  border-radius: 20px; 
+  color: #a0aec0;
+  width: 100%;
+}
+
 /* ================= LAYOUT MUA KEY 2 BÊN ================= */
 .buy-layout {
   display: flex; gap: 30px; align-items: flex-start;
@@ -254,11 +269,6 @@ body {
 }
 .v-link-card .price { color: #ff3b5c; text-shadow: 0 0 10px rgba(255, 59, 92, 0.4); }
 .v-link-card .desc { font-size: 13px; color: #a0aec0; margin-top: 8px; }
-
-.deposit-dev {
-  text-align: center; padding: 80px 20px; background: rgba(20, 24, 36, 0.5);
-  border: 1px dashed rgba(138, 43, 226, 0.5); border-radius: 20px; color: #a0aec0;
-}
 
 /* ================= LỊCH SỬ MUA HÀNG ================= */
 .history-box {
