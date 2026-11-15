@@ -10,7 +10,12 @@ const PACKAGES = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await ensureOwnerAccount();
+  try {
+    await ensureOwnerAccount();
+  } catch (e) {
+    console.log("Lỗi khởi tạo Owner:", e);
+  }
+
   bindLoginUI();
   bindHomeUI();
   bindLogout();
@@ -41,23 +46,45 @@ function bindLoginUI() {
     const u = document.getElementById('loginUsername').value.trim();
     const p = document.getElementById('loginPassword').value;
     const msg = document.getElementById('loginMsg');
-    if(!u || !p) return flash(msg, 'Vui lòng nhập đủ thông tin');
+    
+    if(!u || !p) {
+      msg.textContent = 'Vui lòng nhập đủ Tên và Mật khẩu!';
+      return;
+    }
+
+    msg.style.color = '#ffd700';
+    msg.textContent = 'Đang kiểm tra...';
+
     try {
       const user = await loginNormal(u, p);
       await writeLog(u, 'LOGIN', 'Đăng nhập thường');
       enterApp(user);
-    } catch (e) { flash(msg, e.message); }
+    } catch (e) { 
+      msg.style.color = '#ff3b5c';
+      msg.textContent = e.message; 
+    }
   });
 
   document.getElementById('keyLoginBtn').addEventListener('click', async () => {
     const k = document.getElementById('loginKey').value.trim();
     const msg = document.getElementById('loginMsg');
-    if(!k) return flash(msg, 'Vui lòng nhập key');
+    
+    if(!k) {
+      msg.textContent = 'Vui lòng nhập Key!';
+      return;
+    }
+
+    msg.style.color = '#ffd700';
+    msg.textContent = 'Đang kiểm tra...';
+
     try {
       const user = await loginByKey(k);
       await writeLog(user.username, 'LOGIN_KEY', 'Đăng nhập bằng private key');
       enterApp(user);
-    } catch (e) { flash(msg, e.message); }
+    } catch (e) { 
+      msg.style.color = '#ff3b5c';
+      msg.textContent = e.message; 
+    }
   });
 }
 
@@ -127,7 +154,6 @@ function showBannedModal(banUntil, reason) {
 }
 
 function bindHomeUI() {
-  // 1. Chuyển tab LỚN
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
@@ -144,7 +170,6 @@ function bindHomeUI() {
     });
   });
 
-  // 2. Chuyển tab CON (Mua Key / Mua Acc)
   document.getElementById('btnSubKey')?.addEventListener('click', () => {
     document.getElementById('btnSubKey').classList.add('active');
     document.getElementById('btnSubAcc').classList.remove('active');
@@ -160,7 +185,6 @@ function bindHomeUI() {
     checkAccLockStatus(); 
   });
 
-  // 3. Chuyển trang Trang chủ / Quản lí
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -172,7 +196,6 @@ function bindHomeUI() {
     });
   });
 
-  // 4. Chọn gói mua Key
   document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
@@ -204,7 +227,6 @@ function bindHomeUI() {
     setTimeout(() => { btn.textContent = 'Sao chép'; btn.style.background = ''; btn.style.color = ''; }, 2000);
   });
 
-  // 5. Logic Mua Acc
   document.getElementById('randomAccCard')?.addEventListener('click', async () => {
     const msg = document.getElementById('buyAccMsg');
     if (!CURRENT_USER) return flash(msg, 'Bạn cần đăng nhập');
