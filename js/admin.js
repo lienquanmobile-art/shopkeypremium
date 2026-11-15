@@ -71,13 +71,40 @@ function bindAddAccLogic() {
       return;
     }
 
-    await db.ref('shop_accounts/random').push({ username: u, password: p });
-    await writeLog(CURRENT_USER.username, 'ADD_ACC', `Thêm acc random: ${u}`);
-    
-    msg.style.color = '#00ff88';
-    msg.textContent = 'Thêm acc thành công!';
-    document.getElementById('accUsername').value = '';
-    document.getElementById('accPassword').value = '';
+    msg.style.color = '#ffd700';
+    msg.textContent = 'Đang kiểm tra...';
+
+    try {
+      // Lấy toàn bộ danh sách acc hiện có để kiểm tra trùng
+      const snap = await db.ref('shop_accounts/random').once('value');
+      const accData = snap.val() || {};
+      let isDuplicate = false;
+
+      for (const id in accData) {
+        if (accData[id].username === u) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      if (isDuplicate) {
+        msg.style.color = '#ff3b5c';
+        msg.textContent = 'Tên đăng nhập này đã tồn tại trong kho Acc! Vui lòng nhập tên khác.';
+        return;
+      }
+
+      // Nếu không trùng thì thêm vào
+      await db.ref('shop_accounts/random').push({ username: u, password: p });
+      await writeLog(CURRENT_USER.username, 'ADD_ACC', `Thêm acc random: ${u}`);
+      
+      msg.style.color = '#00ff88';
+      msg.textContent = 'Thêm acc thành công!';
+      document.getElementById('accUsername').value = '';
+      document.getElementById('accPassword').value = '';
+    } catch (error) {
+      msg.style.color = '#ff3b5c';
+      msg.textContent = 'Có lỗi xảy ra, vui lòng thử lại!';
+    }
   });
 
   // Lắng nghe realtime danh sách acc trong tab Admin
