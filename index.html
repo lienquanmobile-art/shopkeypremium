@@ -65,46 +65,65 @@
     <!-- ===== PAGE: HOME ===== -->
     <section id="page-home" class="page">
       <div class="home-tabs">
-        <button class="home-tab active" data-home="buykey">Mua Key</button>
+        <button class="home-tab active" data-home="menu">Menu</button>
         <button class="home-tab" data-home="deposit">Nạp tiền</button>
         <button class="home-tab" data-home="history">Lịch sử mua hàng</button>
         <button class="home-tab" data-home="game">Game</button>
         <button class="home-tab" data-home="earn">Kiếm Tiền</button>
       </div>
 
-      <div id="home-buykey" class="home-content">
-        <div class="buy-layout">
-          <div class="buy-left">
-            <h3 class="section-title">Mua Key Thường</h3>
-            <div class="package-grid">
-              <div class="package-card" data-package="1d"><span class="sale-badge">SALE</span><h3>Gói 1 ngày</h3><p class="price">2.500đ</p></div>
-              <div class="package-card" data-package="3d"><h3>Gói 3 ngày</h3><p class="price">40.000đ</p></div>
-              <div class="package-card" data-package="7d"><h3>Gói 7 ngày</h3><p class="price">75.000đ</p></div>
-              <div class="package-card" data-package="30d"><h3>Gói 30 ngày</h3><p class="price">250.000đ</p></div>
+      <!-- KHỐI MENU (GỘP MUA KEY VÀ MUA ACC) -->
+      <div id="home-menu" class="home-content">
+        <!-- Tab con -->
+        <div class="sub-tabs" style="margin-bottom: 20px;">
+          <button class="sub-tab active" data-subhome="key">Mua Key</button>
+          <button class="sub-tab" data-subhome="acc">Mua Acc</button>
+        </div>
+
+        <!-- Nội dung: Mua Key -->
+        <div id="subhome-key" class="sub-content">
+          <div class="buy-layout">
+            <div class="buy-left">
+              <h3 class="section-title">Mua Key Thường</h3>
+              <div class="package-grid">
+                <div class="package-card" data-package="1d"><span class="sale-badge">SALE</span><h3>Gói 1 ngày</h3><p class="price">2.500đ</p></div>
+                <div class="package-card" data-package="3d"><h3>Gói 3 ngày</h3><p class="price">40.000đ</p></div>
+                <div class="package-card" data-package="7d"><h3>Gói 7 ngày</h3><p class="price">75.000đ</p></div>
+                <div class="package-card" data-package="30d"><h3>Gói 30 ngày</h3><p class="price">250.000đ</p></div>
+              </div>
+              <div class="buy-box">
+                <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
+                <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
+                <button id="buyNowBtn" class="btn-primary" disabled>Mua ngay</button>
+                <p id="buyMsg" class="msg"></p>
+              </div>
             </div>
-            <div class="buy-box">
-              <p>Sản phẩm: <strong id="selectedPackageName">—</strong></p>
-              <p>Số tiền: <strong id="selectedPackagePrice">0</strong> VND</p>
-              <button id="buyNowBtn" class="btn-primary" disabled>Mua ngay</button>
-              <p id="buyMsg" class="msg"></p>
-            </div>
-          </div>
-          <div class="buy-right">
-            <h3 class="section-title">Gói Vượt Link</h3>
-            <div class="package-card v-link-card">
-              <h3>Vượt Link Giá Rẻ</h3>
-              <p class="price">500đ</p>
-              <p class="desc">Nhận link vượt link siêu tốc</p>
-            </div>
-            <div class="buy-box">
-              <p>Sản phẩm: <strong>Gói Vượt Link</strong></p>
-              <p>Số tiền: <strong>500</strong> VND</p>
-              <button id="buyBypassBtn" class="btn-primary">Mua Ngay</button>
-              <p id="bypassMsg" class="msg"></p>
+            <div class="buy-right">
+              <h3 class="section-title">Gói Vượt Link</h3>
+              <div class="package-card v-link-card">
+                <h3>Vượt Link Giá Rẻ</h3>
+                <p class="price">500đ</p>
+                <p class="desc">Nhận link vượt link siêu tốc</p>
+              </div>
+              <div class="buy-box">
+                <p>Sản phẩm: <strong>Gói Vượt Link</strong></p>
+                <p>Số tiền: <strong>500</strong> VND</p>
+                <button id="buyBypassBtn" class="btn-primary">Mua Ngay</button>
+                <p id="bypassMsg" class="msg"></p>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Nội dung: Mua Acc (Đang phát triển) -->
+        <div id="subhome-acc" class="sub-content hidden">
+          <div class="deposit-dev" style="padding: 60px 20px; text-align: center; background: rgba(20, 24, 36, 0.5); border: 1px dashed rgba(138, 43, 226, 0.5); border-radius: 20px;">
+            <h3 style="color: #ffd700; margin-bottom: 10px;">Tính năng đang được phát triển 🚧</h3>
+            <p style="color: #a0aec0;">Chúng tôi đang nỗ lực xây dựng tính năng này. Vui lòng quay lại sau!</p>
+          </div>
+        </div>
       </div>
+
       <div id="home-deposit" class="home-content hidden">
         <div class="deposit-dev"><h3>🚧 Tính năng đang được phát triển 🚧</h3></div>
       </div>
@@ -170,7 +189,7 @@
         <button class="admin-tab" data-admin="key7d">Key 7 ngày</button>
         <button class="admin-tab" data-admin="key30d">Key 30 ngày</button>
         <button class="admin-tab owner-only" data-admin="cards">Quản lý thẻ</button>
-        <button class="admin-tab owner-only" data-admin="linkconfig">Gắn Link</button> <!-- TAB MỚI -->
+        <button class="admin-tab owner-only" data-admin="linkconfig">Gắn Link</button>
         <button class="admin-tab owner-only" data-admin="list">Danh sách tài khoản</button>
         <button class="admin-tab owner-only" data-admin="log">Log</button>
       </div>
@@ -245,7 +264,6 @@
         </div>
       </div>
 
-      <!-- KHU VỰC GẮN LINK (MỚI) -->
       <div id="admin-linkconfig" class="admin-content hidden">
         <h3>Cấu hình Link Vượt</h3>
         <p style="color:#a0aec0; font-size:14px; margin-bottom:20px;">Mỗi ngày, bạn hãy dán 2 link rút gọn Link4m khác nhau vào đây. Khi user vượt hết 2 link, họ sẽ phải đợi bạn cập nhật link mới để vượt tiếp.</p>
@@ -271,7 +289,7 @@
     </section>
   </main>
 
-  <!-- CÁC MODAL CŨ GIỮ NGUYÊN -->
+  <!-- CÁC MODAL -->
   <div id="successModal" class="modal-overlay hidden">
     <div class="modal-content">
       <h3 class="modal-title">Thanh toán thành công!</h3>
@@ -458,7 +476,6 @@
     </div>
   </div>
 
-  <!-- MODAL CHỜ XÁC THỰC VƯỢT LINK -->
   <div id="waitingVerifyModal" class="modal-overlay hidden" style="z-index: 10020;">
     <div class="modal-content" style="border-color: #ffd700; text-align: center;">
       <h3 class="modal-title" style="color: #ffd700;">Đang chờ xác thực...</h3>
