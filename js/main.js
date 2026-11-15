@@ -243,7 +243,8 @@ function bindHomeUI() {
       return flash(msg, `Bạn đã đạt giới hạn mua 15 acc/ngày. Vui lòng quay lại vào ngày mai!`);
     }
 
-    const price = 200;
+    // ĐÃ SỬA GIÁ TẠI ĐÂY
+    const price = 2700;
     if ((u.balance || 0) < price) {
       return flash(msg, `Số dư không đủ (cần ${formatMoney(price)}đ)`);
     }
@@ -299,13 +300,14 @@ async function checkAccLockStatus() {
     document.getElementById('accStoreContent').classList.toggle('hidden', isLocked);
   }
 
-  // 1. Cập nhật số lượng tồn kho thực tế (Từ shop_accounts)
+  // Lấy số lượng tồn kho thực tế
   const accSnap = await db.ref('shop_accounts/random').once('value');
   const totalStock = accSnap.exists() ? Object.keys(accSnap.val()).length : 0;
+  
   const qtyEl = document.getElementById('randomAccQty');
   if (qtyEl) qtyEl.textContent = totalStock;
 
-  // 2. Cập nhật số lượt còn lại của User
+  // Lấy số lượt còn lại của riêng User
   const today = new Date().toISOString().split('T')[0];
   const dailyAccCount = u.accDailyCount || {};
   const countToday = dailyAccCount[today] || 0;
