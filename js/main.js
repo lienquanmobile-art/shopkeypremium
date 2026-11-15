@@ -10,12 +10,7 @@ const PACKAGES = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await ensureOwnerAccount();
-  } catch (e) {
-    console.log("Lỗi khởi tạo Owner:", e);
-  }
-
+  await ensureOwnerAccount();
   bindLoginUI();
   bindHomeUI();
   bindLogout();
@@ -48,6 +43,7 @@ function bindLoginUI() {
     const msg = document.getElementById('loginMsg');
     
     if(!u || !p) {
+      msg.style.color = '#ff3b5c';
       msg.textContent = 'Vui lòng nhập đủ Tên và Mật khẩu!';
       return;
     }
@@ -70,6 +66,7 @@ function bindLoginUI() {
     const msg = document.getElementById('loginMsg');
     
     if(!k) {
+      msg.style.color = '#ff3b5c';
       msg.textContent = 'Vui lòng nhập Key!';
       return;
     }
