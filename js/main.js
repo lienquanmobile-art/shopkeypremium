@@ -126,7 +126,7 @@ function showBannedModal(banUntil, reason) {
 }
 
 function bindHomeUI() {
-  // Chuyển tab LỚN
+  // 1. Chuyển tab LỚN
   document.querySelectorAll('.home-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.home-tab').forEach(b => b.classList.remove('active'));
@@ -143,19 +143,22 @@ function bindHomeUI() {
     });
   });
 
-  // Chuyển tab CON (Mua Key / Mua Acc)
-  document.querySelectorAll('.sub-tab[data-subhome]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sub-tab[data-subhome]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const target = btn.dataset.subhome;
-      
-      document.getElementById('subhome-key').classList.toggle('hidden', target !== 'key');
-      document.getElementById('subhome-acc').classList.toggle('hidden', target !== 'acc');
-    });
+  // 2. Chuyển tab CON (Dùng display trực tiếp để chống crash)
+  document.getElementById('btnSubKey')?.addEventListener('click', () => {
+    document.getElementById('btnSubKey').classList.add('active');
+    document.getElementById('btnSubAcc').classList.remove('active');
+    document.getElementById('subhome-key').style.display = 'block';
+    document.getElementById('subhome-acc').style.display = 'none';
   });
 
-  // Chuyển trang Trang chủ / Quản lí
+  document.getElementById('btnSubAcc')?.addEventListener('click', () => {
+    document.getElementById('btnSubAcc').classList.add('active');
+    document.getElementById('btnSubKey').classList.remove('active');
+    document.getElementById('subhome-key').style.display = 'none';
+    document.getElementById('subhome-acc').style.display = 'block';
+  });
+
+  // 3. Chuyển trang Trang chủ / Quản lí
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -167,7 +170,7 @@ function bindHomeUI() {
     });
   });
 
-  // Chọn gói
+  // 4. Chọn gói
   document.querySelectorAll('.package-card:not(.v-link-card)').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.package-card:not(.v-link-card)').forEach(c => c.classList.remove('selected'));
