@@ -212,7 +212,7 @@ function bindHomeUI() {
     const userSnap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
     const u = userSnap.val();
     
-    if (u.accLocked !== false) {
+    if (u.accLocked !== false && CURRENT_USER.role !== 'OWNER' && CURRENT_USER.role !== 'ADMIN') {
       return flash(msg, 'Tài khoản của bạn đã bị khóa tính năng mua Acc. Vui lòng liên hệ Admin!');
     }
 
@@ -271,7 +271,6 @@ async function checkAccLockStatus() {
   const snap = await db.ref(`users/${CURRENT_USER.username}`).once('value');
   const u = snap.val();
   
-  // Tự động mở khóa nếu là OWNER
   if (CURRENT_USER.role === 'OWNER' || CURRENT_USER.role === 'ADMIN') {
     document.getElementById('accStoreLocked').classList.add('hidden');
     document.getElementById('accStoreContent').classList.remove('hidden');
