@@ -11,9 +11,9 @@
     .login-card h2 { color: #00e5ff; margin-bottom: 10px; }
     .login-card p { color: #a0aec0; margin-bottom: 20px; font-size: 14px; }
     .login-form label { display: block; text-align: left; font-size: 13px; font-weight: 600; margin: 15px 0 5px; color: #a0aec0; }
-    .login-form input { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: #fff; font-size: 15px; outline: none; }
+    .login-form input { width: 100%; padding: 14px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; color: #fff; font-size: 15px; outline: none; box-sizing: border-box; }
     .login-form input:focus { border-color: #00e5ff; }
-    .btn-primary { width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #00e5ff, #8a2be2); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+    .btn-primary { width: 100%; margin-top: 20px; padding: 14px; background: linear-gradient(135deg, #00e5ff, #8a2be2); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; box-sizing: border-box; }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 229, 255, 0.3); }
     .msg { margin-top: 15px; font-size: 14px; font-weight: bold; color: #ff3b5c; }
   </style>
@@ -95,6 +95,15 @@
       updates[`earnCount/${today}`] = doneToday + 1;
 
       await userRef.update(updates);
+      
+      // Ghi log
+      const logRef = db.ref('logs').push();
+      await logRef.set({
+        actor: u,
+        action: 'EARN_SCOIN',
+        detail: `Vượt link thành công, nhận 500 Scoin`,
+        time: Date.now()
+      });
 
       msg.style.color = '#00ff88';
       msg.textContent = 'Xác nhận thành công! Bạn nhận được 500 Scoin. Đang chuyển hướng...';
@@ -104,7 +113,8 @@
       }
       
       setTimeout(() => {
-        window.location.href = 'index.html';
+        // Chuyển về trang chủ, kèm theo mã để tự động load tab game
+        window.location.href = 'index.html?tab=game';
       }, 2000);
     });
   </script>
