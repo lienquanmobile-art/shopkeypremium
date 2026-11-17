@@ -1,4 +1,4 @@
-// xo.js - Game XO 2 người realtime (có nhãn YOU)
+// xo.js - Game XO 2 người realtime (có nhãn YOU, đã fix tràn màn hình)
 let XO_ROOM_ID = null;
 let XO_ROOM_REF = null;
 let XO_LISTENER = null;
@@ -111,10 +111,13 @@ function listenXORoom(roomId) {
     // Cập nhật nhãn người chơi
     updateXOPlayersLabel(room);
 
-    // Cập nhật trạng thái
-    if (room.status === 'playing') {
+    // Cập nhật trạng thái (FIX TRÀN MÀN HÌNH)
+    if (room.status === 'playing' || room.status === 'finished') {
       document.getElementById('xoWaitingBox').classList.add('hidden');
       document.getElementById('xoPlayBox').classList.remove('hidden');
+      document.getElementById('xoModal').classList.add('is-playing'); // Ẩn tiêu đề to
+    } else {
+      document.getElementById('xoModal').classList.remove('is-playing');
     }
 
     const turnEl = document.getElementById('xoTurnText');
@@ -288,6 +291,8 @@ function resetXOState() {
   document.getElementById('xoWaitingBox').classList.add('hidden');
   document.getElementById('xoPlayBox').classList.add('hidden');
   document.getElementById('xoLobbyBox').classList.remove('hidden');
+  document.getElementById('xoModal').classList.remove('is-playing'); // FIX: Xóa class khi thoát
+  
   const msg = document.getElementById('xoMsg');
   if (msg) msg.textContent = '';
   const joinInput = document.getElementById('xoJoinInput');
@@ -312,6 +317,7 @@ function openXOModal() {
   document.getElementById('xoLobbyBox').classList.remove('hidden');
   document.getElementById('xoWaitingBox').classList.add('hidden');
   document.getElementById('xoPlayBox').classList.add('hidden');
+  document.getElementById('xoModal').classList.remove('is-playing');
   const msg = document.getElementById('xoMsg');
   if (msg) msg.textContent = '';
 }
