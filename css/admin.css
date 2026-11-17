@@ -51,11 +51,31 @@
   outline: none;
   font-size: 15px;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300e5ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px top 50%;
+  background-size: 12px auto;
+  padding-right: 40px;
 }
 .admin-content input:focus,
 .admin-content select:focus { 
   border-color: #00e5ff; 
   background: rgba(0, 229, 255, 0.05);
+}
+
+.admin-content select option {
+  background-color: #1a1a2e;
+  color: #ffffff;
+  padding: 10px;
+}
+.admin-content select option:hover,
+.admin-content select option:focus,
+.admin-content select option:checked {
+  background-color: rgba(0, 229, 255, 0.2) !important;
+  color: #00e5ff !important;
 }
 
 .result-box {
@@ -169,85 +189,94 @@
   margin-top: 0;
 }
 
+/* ================= CSS FIX LỖI MODAL CẤM TÀI KHOẢN ================= */
+#banModal .modal-content {
+  max-width: 500px;
+  width: 100%;
+  text-align: left;
+}
+
+#banModal label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 15px 0 8px;
+  color: #a0aec0;
+}
+
+/* Style cho input text, number và select */
+#banModal input[type="text"],
+#banModal input[type="number"],
+#banModal select {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: 0.2s;
+  box-sizing: border-box;
+}
+
+#banModal input[type="text"]:focus,
+#banModal input[type="number"]:focus,
+#banModal select:focus {
+  border-color: #ff3b5c;
+  background: rgba(255, 59, 92, 0.05);
+}
+
+/* Fix lỗi input bị dính liền ở phần thời gian */
 .ban-time-inputs {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-}
-.ban-time-inputs input {
-  width: 100%;
-  padding: 10px;
-  text-align: center;
-}
-
-/* CSS CHO DANH SÁCH THẺ NẠP */
-.card-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  margin-bottom: 12px;
-}
-.card-info p {
-  margin: 4px 0;
-  font-size: 14px;
-  color: #a0aec0;
-}
-.card-code {
-  font-family: monospace;
-  font-size: 18px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  color: #fff;
-}
-.card-status {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 13px;
-}
-.status-unused {
-  background: rgba(0, 191, 255, 0.1);
-  color: #00bfff;
-  border: 1px solid rgba(0, 191, 255, 0.3);
-}
-.status-used {
-  background: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-  border: 1px solid rgba(0, 255, 136, 0.3);
-}
-.status-expired {
-  background: rgba(255, 59, 92, 0.1);
-  color: #ff3b5c;
-  border: 1px solid rgba(255, 59, 92, 0.3);
-}
-
-/* TAB CON (SUB-TABS) */
-.sub-tabs {
-  display: flex;
   gap: 10px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  margin-bottom: 15px;
 }
 
-.sub-tab {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #a0aec0;
+.ban-time-inputs input {
+  text-align: center;
+  padding: 10px 5px;
+  font-size: 14px;
+}
+
+/* Fix lỗi hiển thị danh sách nút chọn thời gian */
+.denom-grid.ban-preset {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.denom.ban-preset {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 59, 92, 0.3);
+  color: #ff3b5c;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: 600;
   font-size: 14px;
   transition: 0.2s;
 }
 
-.sub-tab.active {
-  background: rgba(0, 229, 255, 0.1);
-  border-color: #00e5ff;
-  color: #00e5ff;
+.denom.ban-preset:hover {
+  background: rgba(255, 59, 92, 0.1);
+  border-color: #ff3b5c;
+}
+
+/* Fix lỗi hiển thị nút Cấm / Hủy */
+#banModal .btn-primary {
+  width: auto;
+  flex: 2;
+  margin-top: 0;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff3b5c, #ff8c00);
+  box-shadow: 0 4px 15px rgba(255, 59, 92, 0.4);
+}
+
+#banModal .btn-secondary {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
 }
