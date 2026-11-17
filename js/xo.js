@@ -1,354 +1,243 @@
-// xo.js - Game XO 2 người realtime (có nhãn YOU, đã fix tràn màn hình)
-let XO_ROOM_ID = null;
-let XO_ROOM_REF = null;
-let XO_LISTENER = null;
-let XO_MY_SYMBOL = null; // 'X' hoặc 'O'
-let XO_OPPONENT_NAME = null;
-
-// ================= TẠO PHÒNG =================
-async function createXORoom() {
-  if (!CURRENT_USER) return;
-  const msg = document.getElementById('xoMsg');
-
-  const roomId = 'XO_' + Math.random().toString(36).substring(2, 8).toUpperCase();
-  const roomRef = db.ref(`rooms/${roomId}`);
-
-  await roomRef.set({
-    player1: CURRENT_USER.username,
-    player2: null,
-    board: Array(9).fill(''),
-    turn: 'X',
-    status: 'waiting',
-    winner: null,
-    createdAt: Date.now(),
-    lastMoveAt: Date.now()
-  });
-
-  XO_ROOM_ID = roomId;
-  XO_MY_SYMBOL = 'X';
-  XO_OPPONENT_NAME = null;
-
-  msg.style.color = '#00ff88';
-  msg.textContent = `Đã tạo phòng: ${roomId}. Chờ đối thủ...`;
-
-  document.getElementById('xoRoomCode').textContent = roomId;
-  document.getElementById('xoWaitingBox').classList.remove('hidden');
-  document.getElementById('xoPlayBox').classList.add('hidden');
-
-  listenXORoom(roomId);
+/* ================= XO GAME ================= */
+.xo-lobby, .xo-waiting, .xo-play {
+  background: rgba(20, 24, 36, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 20px;
 }
 
-// ================= THAM GIA PHÒNG =================
-async function joinXORoom() {
-  if (!CURRENT_USER) return;
-  const msg = document.getElementById('xoMsg');
-  const input = document.getElementById('xoJoinInput').value.trim().toUpperCase();
-
-  if (!input) {
-    msg.style.color = '#ff3b5c';
-    msg.textContent = 'Vui lòng nhập mã phòng!';
-    return;
-  }
-
-  const roomRef = db.ref(`rooms/${input}`);
-  const snap = await roomRef.once('value');
-
-  if (!snap.exists()) {
-    msg.style.color = '#ff3b5c';
-    msg.textContent = 'Phòng không tồn tại!';
-    return;
-  }
-
-  const room = snap.val();
-
-  if (room.player2) {
-    msg.style.color = '#ff3b5c';
-    msg.textContent = 'Phòng đã đầy!';
-    return;
-  }
-
-  if (room.player1 === CURRENT_USER.username) {
-    msg.style.color = '#ff3b5c';
-    msg.textContent = 'Bạn không thể tham gia phòng của chính mình!';
-    return;
-  }
-
-  await roomRef.update({
-    player2: CURRENT_USER.username,
-    status: 'playing',
-    lastMoveAt: Date.now()
-  });
-
-  XO_ROOM_ID = input;
-  XO_MY_SYMBOL = 'O';
-  XO_OPPONENT_NAME = room.player1;
-
-  msg.style.color = '#00ff88';
-  msg.textContent = `Đã tham gia phòng: ${input}`;
-
-  document.getElementById('xoWaitingBox').classList.add('hidden');
-  document.getElementById('xoPlayBox').classList.remove('hidden');
-  document.getElementById('xoRoomCode').textContent = input;
-
-  listenXORoom(input);
+/* Sửa lỗi tràn màn hình trên PC */
+#xoModal .modal-content {
+  max-height: 95vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
 }
 
-// ================= LẮNG NGHE PHÒNG =================
-function listenXORoom(roomId) {
-  if (XO_LISTENER) XO_LISTENER.off();
-
-  XO_ROOM_REF = db.ref(`rooms/${roomId}`);
-  XO_LISTENER = XO_ROOM_REF.on('value', snap => {
-    const room = snap.val();
-    if (!room) return;
-
-    // Xác định tên đối thủ
-    XO_OPPONENT_NAME = (room.player1 === CURRENT_USER.username) ? room.player2 : room.player1;
-
-    // Cập nhật bảng
-    updateXOUIBoard(room);
-
-    // Cập nhật nhãn người chơi
-    updateXOPlayersLabel(room);
-
-    // Cập nhật trạng thái (FIX TRÀN MÀN HÌNH)
-    if (room.status === 'playing' || room.status === 'finished') {
-      document.getElementById('xoWaitingBox').classList.add('hidden');
-      document.getElementById('xoPlayBox').classList.remove('hidden');
-      document.getElementById('xoModal').classList.add('is-playing'); // Ẩn tiêu đề to
-    } else {
-      document.getElementById('xoModal').classList.remove('is-playing');
-    }
-
-    const turnEl = document.getElementById('xoTurnText');
-    if (room.status === 'finished') {
-      if (room.winner === 'draw') {
-        turnEl.textContent = '🤝 Hòa!';
-        turnEl.style.color = '#ffd700';
-      } else {
-        turnEl.textContent = room.winner === XO_MY_SYMBOL ? '🏆 Bạn thắng!' : '💀 Bạn thua!';
-        turnEl.style.color = room.winner === XO_MY_SYMBOL ? '#00ff88' : '#ff3b5c';
-      }
-    } else if (room.status === 'waiting') {
-      turnEl.textContent = '⏳ Chờ đối thủ...';
-      turnEl.style.color = '#a0aec0';
-    } else if (room.turn === XO_MY_SYMBOL) {
-      turnEl.textContent = `🎯 Lượt của bạn (${XO_MY_SYMBOL})`;
-      turnEl.style.color = '#00e5ff';
-    } else {
-      turnEl.textContent = `⏳ Chờ đối thủ (${room.turn})...`;
-      turnEl.style.color = '#a0aec0';
-    }
-  });
+#xoModal .modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+#xoModal .modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 10px;
 }
 
-// ================= NHÃN NGƯỜI CHƠI (YOU) =================
-function updateXOPlayersLabel(room) {
-  const p1El = document.getElementById('xoPlayer1');
-  const p2El = document.getElementById('xoPlayer2');
-
-  if (!p1El || !p2El) return;
-
-  const isP1 = room.player1 === CURRENT_USER.username;
-  const isP2 = room.player2 === CURRENT_USER.username;
-
-  // Player 1 (X)
-  p1El.innerHTML = `
-    <span class="xo-symbol x">X</span>
-    <span class="xo-name">${room.player1 || '—'}</span>
-    ${isP1 ? '<span class="xo-you-badge">YOU</span>' : ''}
-  `;
-  p1El.classList.toggle('is-me', isP1);
-  p1El.classList.toggle('is-turn', room.status === 'playing' && room.turn === 'X');
-
-  // Player 2 (O)
-  p2El.innerHTML = `
-    <span class="xo-symbol o">O</span>
-    <span class="xo-name">${room.player2 || '—'}</span>
-    ${isP2 ? '<span class="xo-you-badge">YOU</span>' : ''}
-  `;
-  p2El.classList.toggle('is-me', isP2);
-  p2El.classList.toggle('is-turn', room.status === 'playing' && room.turn === 'O');
+/* Ẩn tiêu đề to khi đang chơi để gọn màn hình */
+#xoModal.is-playing .modal-title {
+  display: none;
 }
 
-// ================= VẼ BÀN CỜ =================
-function updateXOUIBoard(room) {
-  const cells = document.querySelectorAll('.xo-cell');
-  cells.forEach((cell, i) => {
-    cell.textContent = room.board[i] || '';
-    cell.classList.remove('x-mark', 'o-mark', 'win-mark');
-    if (room.board[i] === 'X') cell.classList.add('x-mark');
-    if (room.board[i] === 'O') cell.classList.add('o-mark');
-
-    // Chỉ cho click khi đúng lượt
-    const canClick = room.status === 'playing'
-      && room.turn === XO_MY_SYMBOL
-      && !room.board[i];
-    cell.classList.toggle('clickable', canClick);
-  });
-
-  if (room.status === 'finished' && room.winner !== 'draw') {
-    const winLine = getWinLine(room.board, room.winner);
-    winLine.forEach(i => {
-      document.querySelector(`.xo-cell[data-index="${i}"]`)?.classList.add('win-mark');
-    });
-  }
+/* ===== NHÃN NGƯỜI CHƠI ===== */
+.xo-players {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
 }
 
-// ================= ĐÁNH CỜ =================
-async function makeXOMove(index) {
-  if (!XO_ROOM_ID || !XO_ROOM_REF) return;
-
-  const snap = await XO_ROOM_REF.once('value');
-  const room = snap.val();
-
-  if (!room || room.status !== 'playing') return;
-  if (room.turn !== XO_MY_SYMBOL) return;
-  if (room.board[index]) return;
-
-  const newBoard = [...room.board];
-  newBoard[index] = XO_MY_SYMBOL;
-
-  const winner = checkXOWinner(newBoard);
-
-  const updates = {
-    board: newBoard,
-    turn: XO_MY_SYMBOL === 'X' ? 'O' : 'X',
-    lastMoveAt: Date.now()
-  };
-
-  if (winner) {
-    updates.status = 'finished';
-    updates.winner = winner;
-  }
-
-  await XO_ROOM_REF.update(updates);
-
-  if (winner) {
-    await writeLog(CURRENT_USER.username, 'XO_GAME',
-      `Kết thúc: ${winner === 'draw' ? 'Hòa' : winner === XO_MY_SYMBOL ? 'Thắng' : 'Thua'}`);
-  }
+.xo-player {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.3s;
 }
 
-// ================= KIỂM TRA THẮNG =================
-function checkXOWinner(board) {
-  const lines = [
-    [0,1,2], [3,4,5], [6,7,8],
-    [0,3,6], [1,4,7], [2,5,8],
-    [0,4,8], [2,4,6]
-  ];
-  for (const [a,b,c] of lines) {
-    if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
-  }
-  if (board.every(cell => cell)) return 'draw';
-  return null;
+.xo-player.is-me {
+  border-color: rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.05);
 }
 
-function getWinLine(board, symbol) {
-  const lines = [
-    [0,1,2], [3,4,5], [6,7,8],
-    [0,3,6], [1,4,7], [2,5,8],
-    [0,4,8], [2,4,6]
-  ];
-  for (const line of lines) {
-    if (line.every(i => board[i] === symbol)) return line;
-  }
-  return [];
+.xo-player.is-turn {
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+  animation: xoPulse 1.5s infinite;
 }
 
-// ================= RỜI PHÒNG =================
-async function leaveXORoom() {
-  if (!XO_ROOM_ID || !XO_ROOM_REF) return;
-
-  const snap = await XO_ROOM_REF.once('value');
-  const room = snap.val();
-  if (!room) {
-    resetXOState();
-    return;
-  }
-
-  if (room.status === 'playing') {
-    await XO_ROOM_REF.update({
-      status: 'finished',
-      winner: XO_MY_SYMBOL === 'X' ? 'O' : 'X'
-    });
-  }
-
-  if (room.player1 === CURRENT_USER.username && !room.player2) {
-    await XO_ROOM_REF.remove();
-  }
-
-  resetXOState();
+@keyframes xoPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.6); }
 }
 
-function resetXOState() {
-  if (XO_LISTENER) XO_LISTENER.off();
-  XO_ROOM_ID = null;
-  XO_ROOM_REF = null;
-  XO_MY_SYMBOL = null;
-  XO_OPPONENT_NAME = null;
-
-  document.getElementById('xoWaitingBox').classList.add('hidden');
-  document.getElementById('xoPlayBox').classList.add('hidden');
-  document.getElementById('xoLobbyBox').classList.remove('hidden');
-  document.getElementById('xoModal').classList.remove('is-playing'); // FIX: Xóa class khi thoát
-  
-  const msg = document.getElementById('xoMsg');
-  if (msg) msg.textContent = '';
-  const joinInput = document.getElementById('xoJoinInput');
-  if (joinInput) joinInput.value = '';
+.xo-symbol {
+  font-size: 22px;
+  font-weight: 900;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
-// ================= RESET VÁN MỚI =================
-async function resetXOGame() {
-  if (!XO_ROOM_REF) return;
-  await XO_ROOM_REF.update({
-    board: Array(9).fill(''),
-    turn: 'X',
-    status: 'playing',
-    winner: null,
-    lastMoveAt: Date.now()
-  });
+.xo-symbol.x {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
 }
 
-// ================= MỞ/ĐÓNG MODAL =================
-function openXOModal() {
-  document.getElementById('xoModal').classList.remove('hidden');
-  document.getElementById('xoLobbyBox').classList.remove('hidden');
-  document.getElementById('xoWaitingBox').classList.add('hidden');
-  document.getElementById('xoPlayBox').classList.add('hidden');
-  document.getElementById('xoModal').classList.remove('is-playing');
-  const msg = document.getElementById('xoMsg');
-  if (msg) msg.textContent = '';
+.xo-symbol.o {
+  color: #ff3b5c;
+  background: rgba(255, 59, 92, 0.15);
+  text-shadow: 0 0 10px rgba(255, 59, 92, 0.6);
 }
 
-function closeXOModal() {
-  if (XO_ROOM_ID) leaveXORoom();
-  document.getElementById('xoModal').classList.add('hidden');
+.xo-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
 
-// ================= BIND UI =================
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('xoCard')?.addEventListener('click', openXOModal);
-  document.getElementById('xoCreateBtn')?.addEventListener('click', createXORoom);
-  document.getElementById('xoJoinBtn')?.addEventListener('click', joinXORoom);
-  document.getElementById('xoLeaveBtn')?.addEventListener('click', leaveXORoom);
-  document.getElementById('xoLeaveBtn2')?.addEventListener('click', leaveXORoom);
-  document.getElementById('xoResetBtn')?.addEventListener('click', resetXOGame);
-  document.getElementById('xoCloseBtn')?.addEventListener('click', closeXOModal);
+.xo-you-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #00e5ff, #8a2be2);
+  color: #fff;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
 
-  document.getElementById('xoCopyCodeBtn')?.addEventListener('click', () => {
-    const code = document.getElementById('xoRoomCode').textContent;
-    navigator.clipboard.writeText(code);
-    const btn = document.getElementById('xoCopyCodeBtn');
-    btn.textContent = 'Đã chép!';
-    setTimeout(() => { btn.textContent = 'Sao chép mã'; }, 2000);
-  });
+/* ===== BÀN CỜ ===== */
+.xo-turn-text {
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
 
-  // Gắn sự kiện click cho các ô cờ
-  document.querySelectorAll('.xo-cell').forEach(cell => {
-    cell.addEventListener('click', () => {
-      makeXOMove(parseInt(cell.dataset.index));
-    });
-  });
-});
+.xo-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 20px;
+  background: rgba(0, 229, 255, 0.1);
+  padding: 8px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.xo-cell {
+  aspect-ratio: 1 / 1;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: 900;
+  cursor: default;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.xo-cell.clickable {
+  cursor: pointer;
+}
+
+.xo-cell.clickable:hover {
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.1);
+  transform: scale(1.03);
+}
+
+.xo-cell.x-mark {
+  color: #00e5ff;
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.8);
+}
+
+.xo-cell.o-mark {
+  color: #ff3b5c;
+  text-shadow: 0 0 20px rgba(255, 59, 92, 0.8);
+}
+
+.xo-cell.win-mark {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+/* ===== LOBBY ===== */
+.xo-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.xo-join-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.xo-join-group input {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  width: 200px;
+  outline: none;
+}
+
+.xo-join-group input:focus {
+  border-color: #00e5ff;
+}
+
+.xo-room-code {
+  font-size: 30px;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 4px;
+  text-align: center;
+  padding: 20px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px dashed #ffd700;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+.xo-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+@media (max-width: 500px) {
+  .xo-cell { font-size: 36px; }
+  .xo-room-code { font-size: 22px; letter-spacing: 2px; }
+  .xo-name { font-size: 12px; }
+}
