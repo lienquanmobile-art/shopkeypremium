@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/admin.css" />
   <link rel="stylesheet" href="css/game.css" />
   <link rel="stylesheet" href="css/account.css" />
+  <link rel="stylesheet" href="css/xo.css" />
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -75,7 +76,6 @@
 
       <!-- KHỐI MENU (GỘP MUA KEY VÀ MUA ACC) -->
       <div id="home-menu" class="home-content">
-        <!-- Tab con -->
         <div class="sub-tabs" style="margin-bottom: 20px;">
           <button class="sub-tab active" id="btnSubKey">Mua Key</button>
           <button class="sub-tab" id="btnSubAcc">Mua Acc</button>
@@ -130,7 +130,6 @@
               <div class="acc-card" id="randomAccCard">
                 <h3>Acc Random</h3>
                 <p style="color: #a0aec0; font-size: 14px; margin-bottom: 5px;">Số lượng: <span id="randomAccQty" style="color: #00e5ff; font-weight: bold;">0</span></p>
-                <!-- ĐÃ SỬA GIÁ TẠI ĐÂY -->
                 <p class="acc-price">5.000đ / acc</p>
                 <p id="accLimitText" style="font-size: 13px; font-weight: bold; margin-top: 10px; color: #00ff88;">Còn lại: 15/15 acc hôm nay</p>
               </div>
@@ -171,6 +170,12 @@
               <h3>Rắn Săn Táo</h3>
               <p>Đấu trường PvP Realtime</p>
               <p class="unlock-text" style="color: #ff3b5c;">Đã bị xóa</p>
+            </div>
+            <div class="game-card" id="xoCard">
+              <div class="game-card-icon">⭕</div>
+              <h3>XO 2 Người</h3>
+              <p>Đấu trí realtime</p>
+              <p class="unlock-text" style="color: #00e5ff;">Click để chơi</p>
             </div>
           </div>
         </div>
@@ -526,6 +531,67 @@
     </div>
   </div>
 
+  <!-- ========== MODAL XO GAME ========== -->
+  <div id="xoModal" class="modal-overlay hidden" style="z-index: 10030;">
+    <div class="modal-content" style="max-width: 520px; text-align: left;">
+      <h3 class="modal-title" style="text-align: center;">⭕ Game XO 2 Người</h3>
+
+      <!-- LOBBY -->
+      <div id="xoLobbyBox" class="xo-lobby">
+        <h3>Tạo hoặc tham gia phòng</h3>
+        <div class="xo-actions">
+          <button id="xoCreateBtn" class="btn-primary" style="width: auto; margin-top: 0; padding: 14px 24px;">Tạo phòng mới</button>
+        </div>
+        <div class="xo-join-group">
+          <input type="text" id="xoJoinInput" placeholder="Nhập mã phòng..." maxlength="9" />
+          <button id="xoJoinBtn" class="btn-secondary" style="margin-top: 0;">Tham gia</button>
+        </div>
+        <p id="xoMsg" class="msg" style="text-align: center;"></p>
+      </div>
+
+      <!-- WAITING -->
+      <div id="xoWaitingBox" class="xo-waiting hidden">
+        <h3>Đang chờ đối thủ...</h3>
+        <div class="xo-room-code" id="xoRoomCode">XO_XXXXXX</div>
+        <p style="text-align: center; color: #a0aec0; margin-bottom: 15px;">Gửi mã này cho bạn bè để họ tham gia</p>
+        <div class="xo-controls">
+          <button id="xoCopyCodeBtn" class="btn-primary" style="width: auto; margin-top: 0;">Sao chép mã</button>
+          <button id="xoLeaveBtn" class="btn-secondary" style="margin-top: 0;">Rời phòng</button>
+        </div>
+      </div>
+
+      <!-- PLAY -->
+      <div id="xoPlayBox" class="xo-play hidden">
+        <!-- Nhãn người chơi (có YOU) -->
+        <div class="xo-players">
+          <div class="xo-player" id="xoPlayer1"></div>
+          <div class="xo-player" id="xoPlayer2"></div>
+        </div>
+
+        <div class="xo-turn-text" id="xoTurnText">🎯 Lượt của bạn</div>
+
+        <div class="xo-board">
+          <div class="xo-cell" data-index="0"></div>
+          <div class="xo-cell" data-index="1"></div>
+          <div class="xo-cell" data-index="2"></div>
+          <div class="xo-cell" data-index="3"></div>
+          <div class="xo-cell" data-index="4"></div>
+          <div class="xo-cell" data-index="5"></div>
+          <div class="xo-cell" data-index="6"></div>
+          <div class="xo-cell" data-index="7"></div>
+          <div class="xo-cell" data-index="8"></div>
+        </div>
+
+        <div class="xo-controls">
+          <button id="xoResetBtn" class="btn-primary" style="width: auto; margin-top: 0;">Ván mới</button>
+          <button id="xoLeaveBtn2" class="btn-secondary" style="margin-top: 0;">Rời phòng</button>
+        </div>
+      </div>
+
+      <button id="xoCloseBtn" class="btn-secondary" style="width: 100%; margin-top: 15px;">Đóng</button>
+    </div>
+  </div>
+
   <!-- TẢI SCRIPTS ĐÚNG THỨ TỰ -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -535,5 +601,6 @@
   <script src="js/main.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/xo.js"></script>
 </body>
 </html>
